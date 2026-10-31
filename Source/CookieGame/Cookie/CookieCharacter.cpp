@@ -132,7 +132,11 @@ void ACookieCharacter::ShootCookie()
 	{
 		GameMode->AddCookies(1.0);
 	}
-	LaunchFromCamera(UCookieGameSettings::Get().Cookie);
+
+	FVector Location, Velocity;
+	FRotator Rotation;
+	AimFromCamera(UCookieGameSettings::Get().Cookie, Location, Rotation, Velocity);
+	ACookieLaunchable::SpawnCookie(GetWorld(), Location, Rotation, Velocity);
 }
 
 void ACookieCharacter::SelectSlot(const FInputActionValue& Value)
@@ -203,25 +207,22 @@ bool ACookieCharacter::BuyOnce()
 	{
 		return false;
 	}
-	LaunchFromCamera(UCookieGameSettings::Get().GetItem(SelectedItem).Launch);
+
+	FVector Location, Velocity;
+	FRotator Rotation;
+	AimFromCamera(UCookieGameSettings::Get().GetItem(SelectedItem).Launch, Location, Rotation, Velocity);
+	ACookieLaunchable::SpawnItem(GetWorld(), SelectedItem, Location, Rotation, Velocity);
 	return true;
 }
 
-void ACookieCharacter::LaunchFromCamera(const FCookieLaunchSpec& Spec)
+void ACookieCharacter::AimFromCamera(const FCookieLaunchSpec& Spec, FVector& OutLocation, FRotator& OutRotation, FVector& OutVelocity) const
 {
 	const FVector Direction = Camera->GetForwardVector();
-	const FVector Location = Camera->GetComponentLocation() + Direction * Spec.SpawnDistance;
-	const FRotator Rotation(0.f, GetControlRotation().Yaw, 0.f);
+	OutLocation = Camera->GetComponentLocation() + Direction * Spec.SpawnDistance;
+	OutRotation = FRotator(0.f, GetControlRotation().Yaw, 0.f);
 
-	FActorSpawnParameters Params;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	if (ACookieLaunchable* Thing = GetWorld()->SpawnActor<ACookieLaunchable>(Location, Rotation, Params))
-	{
-		// Look direction, plus a lift for a visible arc, plus the player's own motion.
-		const FVector Velocity = Direction * Spec.LaunchSpeed
-			+ FVector::UpVector * UCookieGameSettings::Get().LaunchUpBoost
-			+ GetVelocity();
-		Thing->Launch(Spec, Velocity);
-	}
+	// Look direction, plus a lift for a visible arc, plus the player's own motion.
+	OutVelocity = Direction * Spec.LaunchSpeed
+		+ FVector::UpVector * UCookieGameSettings::Get().LaunchUpBoost
+		+ GetVelocity();
 }

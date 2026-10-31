@@ -63,8 +63,13 @@ struct FCookieItemSpec
 	UPROPERTY(EditAnywhere, Category = "Item")
 	double BaseCost = 10.0;
 
+	// Banked production. Added to the cookie total smoothly, every frame.
 	UPROPERTY(EditAnywhere, Category = "Item")
 	float CookiesPerSecond = 0.f;
+
+	// How often each one pops a physical cookie out of itself. Visual only; the bank uses CookiesPerSecond.
+	UPROPERTY(EditAnywhere, Category = "Item", meta = (ClampMin = "0.1"))
+	float EmitIntervalSeconds = 3.f;
 
 	UPROPERTY(EditAnywhere, Category = "Item")
 	FCookieLaunchSpec Launch;

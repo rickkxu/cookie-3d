@@ -7,12 +7,30 @@ ACookieGameMode::ACookieGameMode()
 {
 	DefaultPawnClass = ACookieCharacter::StaticClass();
 	HUDClass = ACookieHUD::StaticClass();
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void ACookieGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	Cookies = UCookieGameSettings::Get().StartingCookies;
+}
+
+void ACookieGameMode::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	Cookies += GetCookiesPerSecond() * DeltaSeconds;
+}
+
+double ACookieGameMode::GetCookiesPerSecond() const
+{
+	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
+	double Total = 0.0;
+	for (ECookieItem Item : TEnumRange<ECookieItem>())
+	{
+		Total += GetOwned(Item) * static_cast<double>(Settings.GetItem(Item).CookiesPerSecond);
+	}
+	return Total;
 }
 
 double ACookieGameMode::GetCost(ECookieItem Item) const

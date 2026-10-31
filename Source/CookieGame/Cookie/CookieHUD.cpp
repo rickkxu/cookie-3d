@@ -40,6 +40,7 @@ void ACookieHUD::DrawHUD()
 	DrawRect(FLinearColor::White, Canvas->ClipX * 0.5f - 2.f, Canvas->ClipY * 0.5f - 2.f, 4.f, 4.f);
 
 	DrawCentered(FString::Printf(TEXT("%s cookies"), *FormatCount(GameMode->GetCookies())), FLinearColor::White, 24.f, 2.f);
+	DrawCentered(FString::Printf(TEXT("per second: %.1f"), GameMode->GetCookiesPerSecond()), FLinearColor::White, 80.f, 1.f);
 
 	if (const ACookieCharacter* Player = Cast<ACookieCharacter>(GetOwningPawn()))
 	{

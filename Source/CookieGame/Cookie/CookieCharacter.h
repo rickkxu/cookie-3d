@@ -47,7 +47,8 @@ private:
 	// Buys and launches one of the selected item. Returns false if the player can't afford it.
 	bool BuyOnce();
 
-	void LaunchFromCamera(const FCookieLaunchSpec& Spec);
+	// Where and how fast something thrown from the camera starts out.
+	void AimFromCamera(const FCookieLaunchSpec& Spec, FVector& OutLocation, FRotator& OutRotation, FVector& OutVelocity) const;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	TObjectPtr<UCameraComponent> Camera;

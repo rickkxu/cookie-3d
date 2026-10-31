@@ -22,6 +22,7 @@ UCookieGameSettings::UCookieGameSettings()
 	ToasterOven.DisplayName = NSLOCTEXT("CookieGame", "ToasterOven", "Toaster Oven");
 	ToasterOven.BaseCost = 15.0;
 	ToasterOven.CookiesPerSecond = 0.5f;
+	ToasterOven.EmitIntervalSeconds = 4.f;
 	ToasterOven.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(CubePath));
 	ToasterOven.Launch.Scale = FVector(0.5, 0.35, 0.3);
 	ToasterOven.Launch.Color = FLinearColor(0.6f, 0.6f, 0.65f);
@@ -33,6 +34,7 @@ UCookieGameSettings::UCookieGameSettings()
 	Grandma.DisplayName = NSLOCTEXT("CookieGame", "Grandma", "Grandma");
 	Grandma.BaseCost = 100.0;
 	Grandma.CookiesPerSecond = 2.f;
+	Grandma.EmitIntervalSeconds = 2.5f;
 	Grandma.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(CylinderPath));
 	Grandma.Launch.Scale = FVector(0.4, 0.4, 1.5);
 	Grandma.Launch.Color = FLinearColor(0.7f, 0.55f, 0.85f);

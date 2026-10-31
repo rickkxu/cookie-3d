@@ -43,6 +43,19 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Launch")
 	float LaunchUpBoost = 300.f;
 
+	// Produced cookies pop straight up out of their helper at this speed (cm/s)...
+	UPROPERTY(Config, EditAnywhere, Category = "Production")
+	float EmitPopSpeed = 350.f;
+
+	// ...plus up to this much random sideways speed, so they scatter around it.
+	UPROPERTY(Config, EditAnywhere, Category = "Production")
+	float EmitSpreadSpeed = 150.f;
+
+	// Past this many cookie actors in the world, new physical cookies are skipped (the bank still counts them).
+	// Build step 5 replaces the skip with growing pile meshes.
+	UPROPERTY(Config, EditAnywhere, Category = "Production", meta = (ClampMin = "0"))
+	int32 MaxPhysicalCookies = 500;
+
 	// Purchases per second when right-click is first held...
 	UPROPERTY(Config, EditAnywhere, Category = "Hold To Buy", meta = (ClampMin = "0.1"))
 	float BuyStartRate = 2.f;

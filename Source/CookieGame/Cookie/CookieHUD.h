@@ -7,7 +7,7 @@
 
 class ACookieGameMode;
 
-/** Minimal canvas HUD: cookie total on top, a crosshair, and the item hotbar at the bottom. */
+/** Minimal canvas HUD: cookie total and per-second rate on top, a crosshair, and the item hotbar at the bottom. */
 UCLASS()
 class COOKIEGAME_API ACookieHUD : public AHUD
 {
