@@ -54,18 +54,24 @@ private:
 	{
 		FVector Ground;
 		int32 Count = 0;
-		int32 SurfaceCookies = 0;
+		int32 Seed = 0;
+		// Heap radius when its surface cookies were last laid out.
+		double BuiltRadius = 0.0;
 		bool bDirty = false;
 	};
 
 	UInstancedStaticMeshComponent* MakeInstances(const TCHAR* Name, const FCookieLaunchSpec& Spec);
 	void EmitFromSettledItems(float DeltaSeconds);
 	void RefreshDirtyPiles();
-	double GetPileRadius(const FPile& Pile) const;
-	FTransform GetPileTransform(const FPile& Pile) const;
 
-	// Adds cookies lying on the pile's surface until it is covered at its current size.
-	void CoverPileSurface(FPile& Pile);
+	// Where a new heap goes: on the floor or furniture below Target, without crossing a wall from Source.
+	// Ignores characters, flying things and everything settled.
+	FVector FindPileGround(const FVector& Source, const FVector& Target) const;
+	double GetPileRadius(const FPile& Pile) const;
+	FTransform GetPileCoreTransform(const FPile& Pile) const;
+
+	// Lays out the cookies covering pile Index at its current size.
+	void BuildPileSurface(int32 Index);
 
 	UPROPERTY(Transient)
 	TObjectPtr<UInstancedStaticMeshComponent> CookieInstances;
@@ -77,10 +83,11 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UInstancedStaticMeshComponent> PileInstances;
 
+	// The cookies on each pile, one component per pile so a pile can be re-laid without touching the others.
 	UPROPERTY(Transient)
-	TObjectPtr<UInstancedStaticMeshComponent> PileSurfaceInstances;
+	TArray<TObjectPtr<UInstancedStaticMeshComponent>> PileSurfaces;
 
-	// Pile i is instance i of PileInstances.
+	// Pile i is instance i of PileInstances and PileSurfaces[i].
 	TArray<FPile> Piles;
 	int64 PiledCookies = 0;
 

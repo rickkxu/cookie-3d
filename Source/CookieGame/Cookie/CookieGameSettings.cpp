@@ -20,7 +20,7 @@ UCookieGameSettings::UCookieGameSettings()
 	Cookie.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(CookieMeshPath));
 	Cookie.Scale = FVector(2.0);
 	Cookie.bPlaceholderMaterial = false;
-	Cookie.Color = FLinearColor(0.55f, 0.33f, 0.12f);
+	Cookie.Color = FLinearColor(0.8f, 0.6f, 0.32f);  // The kit cookie's dough, for pile cores and the HUD.
 	Cookie.LaunchSpeed = 1100.f;
 	Cookie.SpawnDistance = 60.f;
 	Cookie.TumbleDegreesPerSecond = 360.f;
