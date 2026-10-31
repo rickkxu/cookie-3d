@@ -10,6 +10,11 @@ namespace
 {
 	FString FormatCount(double Value)
 	{
+		// Past a quadrillion, whole numbers stop fitting on screen (and eventually in an int64).
+		if (Value >= 1e15)
+		{
+			return FString::Printf(TEXT("%.3g"), Value);
+		}
 		return FText::AsNumber(FMath::FloorToInt64(Value)).ToString();
 	}
 

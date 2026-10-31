@@ -139,6 +139,14 @@ void ACookieCharacter::ShootCookie()
 	ACookieLaunchable::SpawnCookie(GetWorld(), Location, Rotation, Velocity);
 }
 
+void ACookieCharacter::CookieStress(int32 ToasterOvens, int32 Grandmas)
+{
+	if (ACookieGameMode* GameMode = GetWorld()->GetAuthGameMode<ACookieGameMode>())
+	{
+		GameMode->StartStressTest(ToasterOvens, Grandmas);
+	}
+}
+
 void ACookieCharacter::SelectSlot(const FInputActionValue& Value)
 {
 	const int32 Slot = FMath::RoundToInt(Value.Get<float>()) - 1;

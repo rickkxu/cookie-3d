@@ -7,13 +7,16 @@ The full design spec is in [`CLAUDE.md`](CLAUDE.md).
 
 | Build step | State |
 |---|---|
-| 1. Left-click shoots a cookie in an arc, counter goes up | Code written, **not compiled yet** |
-| 2. Hold right-click rapid-fires grandmas, ramping rate, costs deducted | Code written, **not compiled yet** |
-| 3. Hotbar (scroll wheel / 1–9), toaster ovens that bounce | Code written, **not compiled yet** |
-| 4. Helpers produce cookies over time and pop out physical cookies | Code written, **not compiled yet** |
-| 5–8 | Not started |
+| 1. Left-click shoots a cookie in an arc, counter goes up | Compiles; mouse input not playtested yet |
+| 2. Hold right-click rapid-fires grandmas, ramping rate, costs deducted | Compiles; mouse input not playtested yet |
+| 3. Hotbar (scroll wheel / 1–9), toaster ovens that bounce | Compiles; keyboard input not playtested yet |
+| 4. Helpers produce cookies over time and pop out physical cookies | Done, verified in stress test |
+| 5. Freeze-when-settled, instancing, cookie piles, stress test | Done, verified in stress test |
+| 6–8 | Not started |
 
-This code was written without an Unreal machine available, so expect a few compile fixes on the first build.
+Stress test (UE 5.8 editor PIE on the rented GPU, template level): empty scene ~48 fps. Dropping 150 ovens +
+400 grandmas at 20/s: 17–24 fps while ~150 things are in the air, back to ~44 fps once everything settles
+(500 cookies + 550 items + ~120 piles holding 10k+ cookies).
 
 ## 1. Rent a machine
 
@@ -28,6 +31,7 @@ then run [`scripts/setup-windows.ps1`](scripts/setup-windows.ps1) on it.
 3. Close the editor once it opens.
 4. Copy these files from this repo into the new project folder:
    - `Source/CookieGame/Cookie/` → `<Project>/Source/CookieGame/Cookie/`
+   - `Content/Cookie/` → `<Project>/Content/Cookie/` (the placeholder color material)
    - `CLAUDE.md`, `README.md`, `docs/`, `scripts/`, `.gitignore` → `<Project>/`
 5. Open `<Project>/Source/CookieGame/CookieGame.Build.cs` and add `"DeveloperSettings"` to
    `PublicDependencyModuleNames`. `"EnhancedInput"` should already be listed; add it if it isn't.
@@ -54,6 +58,11 @@ The template's own character, weapon, and pickups go unused. `ACookieCharacter` 
 To test buying quickly, set **Project Settings → Game → Cookie Game → Starting Cookies** to e.g. 10000.
 Every tunable number lives on that settings page (`Cookie/CookieGameSettings.cpp` holds the defaults).
 
+Stress test: open the console (`~`) during play and run `CookieStress 100 300` (ovens, grandmas) to rain free items
+around you. Set **Stress Test → Log Stats** to print fps and object counts to the Output Log every 2 seconds.
+Measure with the editor window focused, or turn off **Editor Preferences → Use Less CPU when in Background**,
+otherwise the editor throttles itself to ~3 fps.
+
 ## Code map
 
 | File | What it does |
@@ -62,12 +71,13 @@ Every tunable number lives on that settings page (`Cookie/CookieGameSettings.cpp
 | `CookieGameSettings` | All tuning values (costs, rates, launch speeds, placeholder shapes) |
 | `CookieGameMode` | Cookie bank, owned counts, cost formula, passive production |
 | `CookieCharacter` | First-person movement, input (built in code, no assets), shoot, hold-to-buy |
-| `CookieLaunchable` | A thrown physics object (cookie / oven / grandma placeholder); items pop out cookies on a timer |
+| `CookieLaunchable` | A thrown physics object (cookie / oven / grandma placeholder). Freezes into an instance once still |
+| `CookieSettledManager` | Everything at rest, as instanced meshes; settled items keep popping cookies; cookie piles past the cap |
 | `CookieHUD` | Cookie count, crosshair, item hotbar |
 
 ## Working with Claude on the rented machine
 
 Unreal can't run in a cloud container without a GPU, so do the build-and-test loop on the rented PC:
 open a terminal in the project folder and run `claude`. It will read `CLAUDE.md`, can compile, read
-build errors, and carry on from build step 3. If you also set up an Unreal MCP server there, Claude can
+build errors, and carry on from the next build step. If you also set up an Unreal MCP server there, Claude can
 drive the editor directly (place actors, build the house layout).

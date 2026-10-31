@@ -8,9 +8,10 @@
 class UStaticMeshComponent;
 
 /**
- * A physical thing in the world: a cookie, a toaster oven, a grandma.
- * Purchased items pop a cookie out of themselves every few seconds, wherever they land.
- * For now everything simulates physics forever. Freeze-when-settled + instancing is build step 5.
+ * A physical thing in flight: a cookie, a toaster oven, a grandma.
+ * Purchased items pop a cookie out of themselves every few seconds while they fly.
+ * Once it comes to rest it hands itself to ACookieSettledManager as an instance and is destroyed,
+ * so only recently launched things simulate physics.
  */
 UCLASS()
 class COOKIEGAME_API ACookieLaunchable : public AActor
@@ -20,11 +21,14 @@ class COOKIEGAME_API ACookieLaunchable : public AActor
 public:
 	ACookieLaunchable();
 
-	// Spawns and throws a cookie. Returns null if the physical cookie cap is reached.
+	// Spawns and throws a cookie. Always physical: used for the player's own shots.
 	static ACookieLaunchable* SpawnCookie(UWorld* World, const FVector& Location, const FRotator& Rotation, const FVector& Velocity);
 
 	// Spawns and throws a purchased item, which then starts producing physical cookies.
 	static ACookieLaunchable* SpawnItem(UWorld* World, ECookieItem Item, const FVector& Location, const FRotator& Rotation, const FVector& Velocity);
+
+	// A produced cookie pops up out of Top. Past the physical cookie cap it goes onto a pile instead.
+	static void PopCookie(UWorld* World, const FVector& Top);
 
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -37,9 +41,16 @@ private:
 
 	void EmitCookie();
 
+	// Runs a few times a second. Freezes this into an instance once it has been still long enough.
+	void CheckSettled();
+
 	UPROPERTY(VisibleAnywhere, Category = "Cookie")
 	TObjectPtr<UStaticMeshComponent> Mesh;
 
 	FTimerHandle EmitTimer;
+	FTimerHandle SettleTimer;
 	bool bIsCookie = false;
+	ECookieItem Item = ECookieItem::Grandma;
+	float StillSeconds = 0.f;
+	float FlyingSeconds = 0.f;
 };

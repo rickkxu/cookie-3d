@@ -5,6 +5,8 @@
 #include "CookieTypes.h"
 #include "CookieGameMode.generated.h"
 
+class ACookieSettledManager;
+
 /** Owns the cookie bank, how many of each item the player has bought, and passive production. */
 UCLASS()
 class COOKIEGAME_API ACookieGameMode : public AGameModeBase
@@ -30,12 +32,31 @@ public:
 	// Deducts the cost and counts the purchase. Returns false if the player can't afford it.
 	bool TryBuy(ECookieItem Item);
 
-	// Live cookie actors in the world, kept up to date by ACookieLaunchable. Used for the physical cookie cap.
-	int32 GetPhysicalCookieCount() const { return PhysicalCookies; }
-	void AdjustPhysicalCookieCount(int32 Delta) { PhysicalCookies += Delta; }
+	// Cookie actors still simulating physics, kept up to date by ACookieLaunchable. Counts toward the physical cookie cap.
+	int32 GetFlyingCookieCount() const { return FlyingCookies; }
+	void AdjustFlyingCookieCount(int32 Delta) { FlyingCookies += Delta; }
+
+	// Everything that has come to rest.
+	ACookieSettledManager* GetSettled() const { return Settled; }
+
+	// Rains free items down around the player (or the player start), to see how the game holds up.
+	void StartStressTest(int32 ToasterOvens, int32 Grandmas);
 
 private:
+	void SpawnStressBatch();
+	void LogStats(float DeltaSeconds);
+
+	UPROPERTY(Transient)
+	TObjectPtr<ACookieSettledManager> Settled;
+
 	double Cookies = 0.0;
 	int32 Owned[static_cast<int32>(ECookieItem::Count)] = {};
-	int32 PhysicalCookies = 0;
+	int32 FlyingCookies = 0;
+
+	// Stress test items still waiting to be dropped, indexed by ECookieItem.
+	int32 StressPending[static_cast<int32>(ECookieItem::Count)] = {};
+	FTimerHandle StressTimer;
+
+	float StatsSeconds = 0.f;
+	int32 StatsFrames = 0;
 };

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
 #include "CookieTypes.h"
+#include "Materials/MaterialInterface.h"
 #include "CookieGameSettings.generated.h"
 
 /**
@@ -20,6 +21,10 @@ public:
 	static const UCookieGameSettings& Get() { return *GetDefault<UCookieGameSettings>(); }
 
 	const FCookieItemSpec& GetItem(ECookieItem Item) const;
+
+	// Flat material with a "Color" vector parameter, used on every placeholder shape.
+	UPROPERTY(Config, EditAnywhere, Category = "Launch")
+	TSoftObjectPtr<UMaterialInterface> PlaceholderMaterial;
 
 	// Each purchase multiplies that item's price by this: cost = base * growth^owned.
 	UPROPERTY(Config, EditAnywhere, Category = "Economy", meta = (ClampMin = "1.0"))
@@ -51,10 +56,47 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Production")
 	float EmitSpreadSpeed = 150.f;
 
-	// Past this many cookie actors in the world, new physical cookies are skipped (the bank still counts them).
-	// Build step 5 replaces the skip with growing pile meshes.
+	// Past this many individual cookies (flying + settled), new cookies grow pile meshes instead.
 	UPROPERTY(Config, EditAnywhere, Category = "Production", meta = (ClampMin = "0"))
 	int32 MaxPhysicalCookies = 500;
+
+	// Produced cookies only fly while fewer than this many cookies are in the air; the rest go straight onto piles.
+	// Keeps a big bakery from flooding the physics engine. The player's own shots always fly.
+	UPROPERTY(Config, EditAnywhere, Category = "Production", meta = (ClampMin = "0"))
+	int32 MaxFlyingCookies = 40;
+
+	// Cookies landing within this distance (cm) of an existing pile join it instead of starting a new one.
+	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "1.0"))
+	float PileMergeRadius = 250.f;
+
+	// A pile this full stops growing, and the next cookie nearby starts a new pile.
+	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "1"))
+	int32 MaxCookiesPerPile = 3000;
+
+	// Space each piled cookie takes up (cm^3), which sets how fast piles grow. ~4000 = loosely packed cookies.
+	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "1.0"))
+	float PileCookieVolume = 4000.f;
+
+	// Growing piles are resized at most this often (resizing rebuilds collision).
+	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "0.0"))
+	float PileRefreshSeconds = 0.25f;
+
+	// A thrown thing counts as still below this speed (cm/s)...
+	UPROPERTY(Config, EditAnywhere, Category = "Settling", meta = (ClampMin = "0.0"))
+	float SettleSpeed = 10.f;
+
+	// ...and this spin (degrees/s)...
+	UPROPERTY(Config, EditAnywhere, Category = "Settling", meta = (ClampMin = "0.0"))
+	float SettleSpinDegrees = 20.f;
+
+	// ...and freezes into a cheap static instance after staying still this long.
+	UPROPERTY(Config, EditAnywhere, Category = "Settling", meta = (ClampMin = "0.0"))
+	float SettleSeconds = 0.5f;
+
+	// After flying this long, anything merely slow (under 10x SettleSpeed) also freezes, so things wedged
+	// together and jittering don't simulate forever.
+	UPROPERTY(Config, EditAnywhere, Category = "Settling", meta = (ClampMin = "0.5"))
+	float MaxFlyingSeconds = 10.f;
 
 	// Purchases per second when right-click is first held...
 	UPROPERTY(Config, EditAnywhere, Category = "Hold To Buy", meta = (ClampMin = "0.1"))
@@ -71,4 +113,22 @@ public:
 	// Safety cap so a frame hitch can't dump dozens of items at once.
 	UPROPERTY(Config, EditAnywhere, Category = "Hold To Buy", meta = (ClampMin = "1"))
 	int32 MaxBuysPerFrame = 4;
+
+	// Free items rained down around the player when play starts. Also: console command "CookieStress <ovens> <grandmas>".
+	UPROPERTY(Config, EditAnywhere, Category = "Stress Test", meta = (ClampMin = "0"))
+	int32 StressTestToasterOvens = 0;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Stress Test", meta = (ClampMin = "0"))
+	int32 StressTestGrandmas = 0;
+
+	// How many stress test items drop every 0.05 s.
+	UPROPERTY(Config, EditAnywhere, Category = "Stress Test", meta = (ClampMin = "1"))
+	int32 StressSpawnsPerBatch = 1;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Stress Test", meta = (ClampMin = "0.0"))
+	float StressDropRadius = 800.f;
+
+	// Prints fps and object counts to the output log every 2 seconds.
+	UPROPERTY(Config, EditAnywhere, Category = "Stress Test")
+	bool bLogStats = false;
 };

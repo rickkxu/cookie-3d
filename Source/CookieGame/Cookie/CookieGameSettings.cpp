@@ -2,13 +2,16 @@
 
 namespace
 {
-	// Engine placeholder shapes. Both use BasicShapeMaterial, which has a "Color" parameter.
+	// Engine placeholder shapes, tinted with PlaceholderMaterial.
 	const TCHAR* CylinderPath = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
 	const TCHAR* CubePath = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* PlaceholderMaterialPath = TEXT("/Game/Cookie/M_CookiePlaceholder.M_CookiePlaceholder");
 }
 
 UCookieGameSettings::UCookieGameSettings()
 {
+	PlaceholderMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(PlaceholderMaterialPath));
+
 	// Cookie: a flat brown disc, 25 cm across.
 	Cookie.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(CylinderPath));
 	Cookie.Scale = FVector(0.25, 0.25, 0.05);

@@ -29,6 +29,10 @@ public:
 
 	ECookieItem GetSelectedItem() const { return SelectedItem; }
 
+	// Console command: rains free items down around the player. "CookieStress 100 300".
+	UFUNCTION(Exec)
+	void CookieStress(int32 ToasterOvens, int32 Grandmas);
+
 protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void NotifyControllerChanged() override;
