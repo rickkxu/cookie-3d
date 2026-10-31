@@ -11,3 +11,8 @@ Build/
 *.VC.db
 *.opensdf
 *.sdf
+
+# Purchased Fab assets (licensed; add them to the project yourself, see README)
+Content/LowPolyInterior/
+Content/Fab/
+Content/Cookie/Grandma/Model/
