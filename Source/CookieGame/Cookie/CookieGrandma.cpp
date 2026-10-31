@@ -17,17 +17,18 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "PhysicsEngine/PhysicsAsset.h"
 #include "TimerManager.h"
 
 namespace
 {
 	constexpr float GrandmaSettleCheckSeconds = 0.1f;
 
-	// UE5 mannequin bones.
-	const FName Pelvis(TEXT("pelvis"));
-	const FName Head(TEXT("head"));
-	const FName LeftShoulder(TEXT("upperarm_l"));
-	const FName RightShoulder(TEXT("upperarm_r"));
+	// Bones on the grandma's skeleton. Named in the settings, so any humanoid rig works.
+	FName PelvisBone() { return UCookieGameSettings::Get().GrandmaPelvisBone; }
+	FName HeadBone() { return UCookieGameSettings::Get().GrandmaHeadBone; }
+	FName LeftShoulderBone() { return UCookieGameSettings::Get().GrandmaLeftUpperArmBone; }
+	FName RightShoulderBone() { return UCookieGameSettings::Get().GrandmaRightUpperArmBone; }
 
 	/**
 	 * Copies the skeletal mesh's current pose (at the given detail level) into a new static mesh,
@@ -88,10 +89,11 @@ namespace
 			Attributes.GetVertexInstanceNormals()[Instance] = Normal;
 			Attributes.GetVertexInstanceTangents()[Instance] = FVector3f::CrossProduct(Normal, FVector3f::ForwardVector).GetSafeNormal(UE_SMALL_NUMBER, FVector3f::RightVector);
 			Attributes.GetVertexInstanceBinormalSigns()[Instance] = 1.f;
+			Attributes.GetVertexInstanceUVs().Set(Instance, 0, LOD.StaticVertexBuffers.StaticMeshVertexBuffer.GetVertexUV(Index, 0));
 			Instances.Add(Instance);
 		}
 
-		// One material for the whole body: it's a flat-colored placeholder anyway.
+		// One material for the whole body (the stand-in and the Fab grandma both have a single material slot).
 		const FPolygonGroupID Group = Description.CreatePolygonGroup();
 		Attributes.GetPolygonGroupMaterialSlotNames()[Group] = TEXT("Body");
 		for (int32 Tri = 0; Tri < NumTriangles; ++Tri)
@@ -100,7 +102,11 @@ namespace
 		}
 
 		UStaticMesh* Mesh = NewObject<UStaticMesh>(Body->GetWorld(), TEXT("FrozenGrandmaPose"));
-		Mesh->GetStaticMaterials().Add(FStaticMaterial(UCookieGameSettings::Get().PlaceholderMaterial.LoadSynchronous(), TEXT("Body")));
+		const UCookieGameSettings& Settings = UCookieGameSettings::Get();
+		UMaterialInterface* Material = Settings.Grandma.Launch.bPlaceholderMaterial
+			? Settings.PlaceholderMaterial.LoadSynchronous()
+			: Body->GetSkinnedAsset()->GetMaterials()[0].MaterialInterface.Get();
+		Mesh->GetStaticMaterials().Add(FStaticMaterial(Material, TEXT("Body")));
 		UStaticMesh::FBuildMeshDescriptionsParams Params;
 		Params.bBuildSimpleCollision = true;
 		Params.bFastBuild = true;
@@ -161,7 +167,16 @@ void ACookieGrandma::ApplyLook()
 	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
 
 	Body->SetSkeletalMeshAsset(Settings.GrandmaMesh.LoadSynchronous());
+	if (UPhysicsAsset* Physics = Settings.GrandmaPhysicsAsset.LoadSynchronous())
+	{
+		Body->SetPhysicsAsset(Physics, /*bForceReInit=*/ true);
+	}
 	Body->SetWorldScale3D(FVector(Settings.GrandmaScale));
+
+	if (!Settings.Grandma.Launch.bPlaceholderMaterial)
+	{
+		return;
+	}
 
 	// Placeholder look: every material slot gets the flat color material in grandma lavender.
 	UMaterialInterface* Placeholder = Settings.PlaceholderMaterial.LoadSynchronous();
@@ -190,7 +205,7 @@ void ACookieGrandma::Launch(const FVector& Velocity)
 	// Full ragdoll from the moment she leaves the player.
 	Body->SetSimulatePhysics(true);
 	Body->SetAllPhysicsLinearVelocity(Velocity);
-	Body->SetPhysicsAngularVelocityInDegrees(FMath::VRand() * UCookieGameSettings::Get().Grandma.Launch.TumbleDegreesPerSecond, false, Pelvis);
+	Body->SetPhysicsAngularVelocityInDegrees(FMath::VRand() * UCookieGameSettings::Get().Grandma.Launch.TumbleDegreesPerSecond, false, PelvisBone());
 
 	GetWorldTimerManager().SetTimer(SettleTimer, this, &ACookieGrandma::CheckSettled, GrandmaSettleCheckSeconds, true);
 	StartEmitting();
@@ -208,7 +223,7 @@ void ACookieGrandma::CheckSettled()
 	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
 	FlyingSeconds += GrandmaSettleCheckSeconds;
 	const float Tolerance = FlyingSeconds >= Settings.MaxFlyingSeconds ? 10.f : 1.f;
-	const bool bStill = Body->GetPhysicsLinearVelocity(Pelvis).Size() < Settings.SettleSpeed * Tolerance;
+	const bool bStill = Body->GetPhysicsLinearVelocity(PelvisBone()).Size() < Settings.SettleSpeed * Tolerance;
 	StillSeconds = bStill ? StillSeconds + GrandmaSettleCheckSeconds : 0.f;
 	if (StillSeconds >= Settings.SettleSeconds)
 	{
@@ -305,14 +320,14 @@ void ACookieGrandma::SetAnimated(bool bAnimate)
 FVector ACookieGrandma::GetChestDirection() const
 {
 	// Shoulder line crossed with the spine points out of her chest, whatever her bones' axes are.
-	const FVector Spine = Body->GetBoneLocation(Head) - Body->GetBoneLocation(Pelvis);
-	const FVector Shoulders = Body->GetBoneLocation(RightShoulder) - Body->GetBoneLocation(LeftShoulder);
+	const FVector Spine = Body->GetBoneLocation(HeadBone()) - Body->GetBoneLocation(PelvisBone());
+	const FVector Shoulders = Body->GetBoneLocation(RightShoulderBone()) - Body->GetBoneLocation(LeftShoulderBone());
 	return FVector::CrossProduct(Shoulders, Spine).GetSafeNormal();
 }
 
 FVector ACookieGrandma::GetHeadDirection() const
 {
-	return (Body->GetBoneLocation(Head) - Body->GetBoneLocation(Pelvis)).GetSafeNormal2D();
+	return (Body->GetBoneLocation(HeadBone()) - Body->GetBoneLocation(PelvisBone())).GetSafeNormal2D();
 }
 
 void ACookieGrandma::PoseAtEndOf(UAnimSequence* Anim)
@@ -329,7 +344,7 @@ void ACookieGrandma::StartGettingUp()
 	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
 
 	// Remember how she landed before the ragdoll is switched off.
-	const FVector LyingPelvis = Body->GetBoneLocation(Pelvis);
+	const FVector LyingPelvis = Body->GetBoneLocation(PelvisBone());
 	const FVector LyingHeadDirection = GetHeadDirection();
 	const bool bFaceUp = GetChestDirection().Z > 0.0;
 
@@ -369,7 +384,7 @@ void ACookieGrandma::StartGettingUp()
 	const FVector AnimHeadDirection = GetHeadDirection();
 	const double Yaw = FMath::RadiansToDegrees(FMath::Atan2(LyingHeadDirection.Y, LyingHeadDirection.X)
 		- FMath::Atan2(AnimHeadDirection.Y, AnimHeadDirection.X));
-	const FVector PelvisOffset = (Body->GetBoneLocation(Pelvis) - GetActorLocation()) * FVector(1.0, 1.0, 0.0);
+	const FVector PelvisOffset = (Body->GetBoneLocation(PelvisBone()) - GetActorLocation()) * FVector(1.0, 1.0, 0.0);
 	const FVector RotatedOffset = PelvisOffset.RotateAngleAxis(Yaw, FVector::UpVector);
 	SetActorLocationAndRotation(FVector(LyingPelvis.X - RotatedOffset.X, LyingPelvis.Y - RotatedOffset.Y, GroundZ),
 		FRotator(0.0, Yaw, 0.0), false, nullptr, ETeleportType::TeleportPhysics);

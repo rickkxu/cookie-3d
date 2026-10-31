@@ -64,6 +64,8 @@ then run [`scripts/setup-windows.ps1`](scripts/setup-windows.ps1) on it.
 5. Open `<Project>/Source/CookieGame/CookieGame.Build.cs` and add `"DeveloperSettings"`, `"PhysicsCore"`,
    `"MeshDescription"`, `"StaticMeshDescription"`, `"RenderCore"` and `"RHI"` to `PublicDependencyModuleNames`,
    and `"CookieGame/Cookie"` to `PublicIncludePaths`. `"EnhancedInput"` should already be listed; add it if it isn't.
+   For the editor-only retarget setup command, also add, inside `if (Target.bBuildEditor) { ... }`,
+   `"UnrealEd"`, `"AssetRegistry"`, `"IKRig"`, `"IKRigEditor"`, `"SlateCore"` and `"PhysicsUtilities"` to `PrivateDependencyModuleNames`.
 6. Right-click `CookieGame.uproject` → **Generate Visual Studio project files**, then double-click
    `CookieGame.uproject` and let it rebuild.
 

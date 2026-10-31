@@ -6,6 +6,7 @@
 #include "Materials/MaterialInterface.h"
 
 class UAnimSequence;
+class UPhysicsAsset;
 class USkeletalMesh;
 
 #include "CookieGameSettings.generated.h"
@@ -49,8 +50,25 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
 	TSoftObjectPtr<USkeletalMesh> GrandmaMesh;
 
-	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body", meta = (ClampMin = "0.1"))
-	float GrandmaScale = 0.85f;
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body", meta = (ClampMin = "0.01"))
+	float GrandmaScale = 1.f;
+
+	// Ragdoll body to use instead of the mesh's own. Leave empty to use the mesh's.
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
+	TSoftObjectPtr<UPhysicsAsset> GrandmaPhysicsAsset;
+
+	// Bones the get-up logic reads to tell how she landed: which way her head points and which way her chest faces.
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
+	FName GrandmaPelvisBone = TEXT("pelvis");
+
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
+	FName GrandmaHeadBone = TEXT("head");
+
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
+	FName GrandmaLeftUpperArmBone = TEXT("upperarm_l");
+
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
+	FName GrandmaRightUpperArmBone = TEXT("upperarm_r");
 
 	// Falls that end lying down. Played backwards to get up, picking one that lies the same way up as she landed.
 	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
