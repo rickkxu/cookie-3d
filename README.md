@@ -12,8 +12,8 @@ The full design spec is in [`CLAUDE.md`](CLAUDE.md).
 | 3. Hotbar (scroll wheel / 1–9), toaster ovens that bounce | Done, playtested |
 | 4. Helpers produce cookies over time and pop out physical cookies | Done |
 | 5. Freeze-when-settled, instancing, cookie piles, stress test | Done |
-| 6. Grandmas ragdoll on landing, get up, bake; only nearby ones animate | Done (Quinn mannequin stand-in) |
-| 7. House: kitchen, living room, hallway, bedroom, bathroom, front door, fenced yard | Done (placeholder blocks, no roof yet) |
+| 6. Grandmas ragdoll on landing, get up, bake; only nearby ones animate | Done, playtested (Quinn mannequin stand-in) |
+| 7. House: kitchen, living room, hallway, bedroom, bathroom, front door, fenced yard | Done, playtested (placeholder blocks, no roof yet) |
 | 8 | Not started |
 
 Performance (UE 5.8 editor PIE on a Tesla T4, template level): empty scene ~48 fps; 30 ovens + 60 grandmas
