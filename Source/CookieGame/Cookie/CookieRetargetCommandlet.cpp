@@ -4,8 +4,6 @@
 #include "Animation/AnimSequence.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/SkeletalMesh.h"
-#include "PhysicsAssetUtils.h"
-#include "PhysicsEngine/PhysicsAsset.h"
 #include "Retargeter/IKRetargeter.h"
 #include "Retargeter/IKRetargetSettings.h"
 #include "RetargetEditor/IKRetargetBatchOperation.h"
@@ -19,8 +17,9 @@
 namespace
 {
 	const TCHAR* QuinnMeshPath = TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple");
-	// The Fab importer named the folder after the listing, en dash included.
-	const TCHAR* GrandmaMeshPath = TEXT("/Game/Fab/Grandma_3D_Character_Stylized_Cartoon_Elder_Women_–_Rigged___Animated_/fbx/SkeletalMeshes/fbx.fbx");
+	// The Fab grandma, imported from the listing's FBX download (Mixamo rig; the importer drops the "mixamorig:" prefix).
+	const TCHAR* GrandmaMeshPath = TEXT("/Game/Cookie/Grandma/Model/SK_Grandma.SK_Grandma");
+	const TCHAR* GrandmaRoot = TEXT("Hips");
 	const TCHAR* OutputFolder = TEXT("/Game/Cookie/Grandma");
 
 	const TCHAR* AnimsToRetarget[] = {
@@ -44,15 +43,15 @@ namespace
 	};
 
 	const FChain Chains[] = {
-		{ TEXT("Spine"),         TEXT("spine_01"),   TEXT("spine_05"),  TEXT("mixamorig_Spine_02"),         TEXT("mixamorig_Spine2_04") },
-		{ TEXT("Neck"),          TEXT("neck_01"),    TEXT("neck_02"),   TEXT("mixamorig_Neck_05"),          TEXT("mixamorig_Neck_05") },
-		{ TEXT("Head"),          TEXT("head"),       TEXT("head"),      TEXT("mixamorig_Head_06"),          TEXT("mixamorig_Head_06") },
-		{ TEXT("LeftClavicle"),  TEXT("clavicle_l"), TEXT("clavicle_l"), TEXT("mixamorig_LeftShoulder_08"), TEXT("mixamorig_LeftShoulder_08") },
-		{ TEXT("LeftArm"),       TEXT("upperarm_l"), TEXT("hand_l"),    TEXT("mixamorig_LeftArm_09"),       TEXT("mixamorig_LeftHand_011") },
-		{ TEXT("RightClavicle"), TEXT("clavicle_r"), TEXT("clavicle_r"), TEXT("mixamorig_RightShoulder_032"), TEXT("mixamorig_RightShoulder_032") },
-		{ TEXT("RightArm"),      TEXT("upperarm_r"), TEXT("hand_r"),    TEXT("mixamorig_RightArm_033"),     TEXT("mixamorig_RightHand_035") },
-		{ TEXT("LeftLeg"),       TEXT("thigh_l"),    TEXT("ball_l"),    TEXT("mixamorig_LeftUpLeg_055"),    TEXT("mixamorig_LeftToeBase_058") },
-		{ TEXT("RightLeg"),      TEXT("thigh_r"),    TEXT("ball_r"),    TEXT("mixamorig_RightUpLeg_060"),   TEXT("mixamorig_RightToeBase_063") },
+		{ TEXT("Spine"),         TEXT("spine_01"),   TEXT("spine_05"),   TEXT("Spine"),         TEXT("Spine2") },
+		{ TEXT("Neck"),          TEXT("neck_01"),    TEXT("neck_02"),    TEXT("Neck"),          TEXT("Neck") },
+		{ TEXT("Head"),          TEXT("head"),       TEXT("head"),       TEXT("Head"),          TEXT("Head") },
+		{ TEXT("LeftClavicle"),  TEXT("clavicle_l"), TEXT("clavicle_l"), TEXT("LeftShoulder"),  TEXT("LeftShoulder") },
+		{ TEXT("LeftArm"),       TEXT("upperarm_l"), TEXT("hand_l"),     TEXT("LeftArm"),       TEXT("LeftHand") },
+		{ TEXT("RightClavicle"), TEXT("clavicle_r"), TEXT("clavicle_r"), TEXT("RightShoulder"), TEXT("RightShoulder") },
+		{ TEXT("RightArm"),      TEXT("upperarm_r"), TEXT("hand_r"),     TEXT("RightArm"),      TEXT("RightHand") },
+		{ TEXT("LeftLeg"),       TEXT("thigh_l"),    TEXT("ball_l"),     TEXT("LeftUpLeg"),     TEXT("LeftToeBase") },
+		{ TEXT("RightLeg"),      TEXT("thigh_r"),    TEXT("ball_r"),     TEXT("RightUpLeg"),    TEXT("RightToeBase") },
 	};
 
 	template <typename T>
@@ -115,30 +114,8 @@ int32 UCookieRetargetCommandlet::Main(const FString& Params)
 		return 1;
 	}
 
-	// Her imported physics body was generated at her 1 cm import size, where every bone is under the
-	// generator's 20 cm minimum. Build one with the minimum scaled down to match (she's scaled up ~155x in game).
-	{
-		UPhysicsAsset* Physics = CreateAsset<UPhysicsAsset>(TEXT("PA_Grandma"));
-		FPhysAssetCreateParams PhysicsParams;
-		PhysicsParams.MinBoneSize = 20.f / 155.f;
-		FText Error;
-		if (FPhysicsAssetUtils::CreateFromSkeletalMesh(Physics, Grandma, PhysicsParams, Error, /*bSetToMesh=*/ false, /*bShowProgress=*/ false))
-		{
-			UE_LOG(LogTemp, Display, TEXT("CookieRetarget: PA_Grandma has %d bodies"), Physics->SkeletalBodySetups.Num());
-			SavePackageOf(Physics);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("CookieRetarget: physics asset failed: %s"), *Error.ToString());
-		}
-	}
-	if (Params.Contains(TEXT("-physicsonly")))
-	{
-		return 0;
-	}
-
 	UIKRigDefinition* QuinnRig = MakeRig(TEXT("IK_Quinn"), Quinn, TEXT("pelvis"), true);
-	UIKRigDefinition* GrandmaRig = MakeRig(TEXT("IK_Grandma"), Grandma, TEXT("mixamorig_Hips_01"), false);
+	UIKRigDefinition* GrandmaRig = MakeRig(TEXT("IK_Grandma"), Grandma, GrandmaRoot, false);
 
 	UIKRetargeter* Retargeter = CreateAsset<UIKRetargeter>(TEXT("RTG_QuinnToGrandma"));
 	UIKRetargeterController* Controller = UIKRetargeterController::GetController(Retargeter);

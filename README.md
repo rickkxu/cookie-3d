@@ -14,7 +14,7 @@ The full design spec is in [`CLAUDE.md`](CLAUDE.md).
 | 5. Freeze-when-settled, instancing, cookie piles, stress test | Done |
 | 6. Grandmas ragdoll on landing, get up, bake; only nearby ones animate | Done, playtested (Quinn mannequin stand-in) |
 | 7. House: kitchen, living room, hallway, bedroom, bathroom, front door, fenced yard | Done, playtested (placeholder blocks, no roof yet) |
-| 8. Stylized models and sounds | In progress: cookie, toaster oven and house done (Low Poly Interior kit); grandma model needs retargeting; sounds not started |
+| 8. Stylized models and sounds | In progress: cookie, toaster oven, house (Low Poly Interior kit) and grandma (Fab, retargeted) done; sounds not started |
 
 Performance (standalone `-game`, 1280×720, Tesla T4, house with 25 ovens + 40 grandmas producing): **~76 fps**
 with the rendering settings below, versus ~18 fps with the template's defaults. The defaults (Lumen,
@@ -57,15 +57,19 @@ then run [`scripts/setup-windows.ps1`](scripts/setup-windows.ps1) on it.
    - `Content/__ExternalActors__/Cookie/` and `Content/__ExternalObjects__/Cookie/` → the same paths in
      `<Project>/Content/` (the house level's actors; World Partition stores each one as its own file)
    - `CLAUDE.md`, `README.md`, `docs/`, `scripts/`, `.gitignore` → `<Project>/`
-   - **Purchased art, not in this repo** (licensed Fab assets; add them with Fab → **Add to Project**):
-     the **Low Poly Interior** kit (`Content/LowPolyInterior/`: house pieces, furniture, cookie, toaster) and the
-     **Grandma 3D Character – Stylized Cartoon Elder Woman** (`Content/Fab/...`). In the kit, open
-     `Materials/M_LowPolyInterior_01` and tick **Used with Instanced Static Meshes**, then save.
+   - **Purchased art, not in this repo** (licensed Fab assets):
+     - The **Low Poly Interior** kit: Fab → **Add to Project** (`Content/LowPolyInterior/`: house pieces, furniture,
+       cookie, toaster). Open `Materials/M_LowPolyInterior_01`, tick **Used with Instanced Static Meshes**, save.
+     - The **Grandma 3D Character – Stylized Cartoon Elder Woman**: use the listing's **FBX download**, not
+       Add to Project (Fab's auto-converted version has a broken skeleton). Import the `.fbx` into
+       `Content/Cookie/Grandma/Model/` named `SK_Grandma`, with materials, textures and a physics asset. Open its
+       `material`, tick **Used with Instanced Static Meshes**, save. Then, with the editor closed, run
+       `UnrealEditor-Cmd.exe CookieGame.uproject -run=CookieRetarget` to copy the mannequin's idle and falls onto her.
 5. Open `<Project>/Source/CookieGame/CookieGame.Build.cs` and add `"DeveloperSettings"`, `"PhysicsCore"`,
    `"MeshDescription"`, `"StaticMeshDescription"`, `"RenderCore"` and `"RHI"` to `PublicDependencyModuleNames`,
    and `"CookieGame/Cookie"` to `PublicIncludePaths`. `"EnhancedInput"` should already be listed; add it if it isn't.
    For the editor-only retarget setup command, also add, inside `if (Target.bBuildEditor) { ... }`,
-   `"UnrealEd"`, `"AssetRegistry"`, `"IKRig"`, `"IKRigEditor"`, `"SlateCore"` and `"PhysicsUtilities"` to `PrivateDependencyModuleNames`.
+   `"UnrealEd"`, `"AssetRegistry"`, `"IKRig"`, `"IKRigEditor"` and `"SlateCore"` to `PrivateDependencyModuleNames`.
 6. Right-click `CookieGame.uproject` → **Generate Visual Studio project files**, then double-click
    `CookieGame.uproject` and let it rebuild.
 

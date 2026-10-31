@@ -39,16 +39,20 @@ UCookieGameSettings::UCookieGameSettings()
 	ToasterOven.Launch.SpawnDistance = 110.f;
 	ToasterOven.Launch.Bounciness = 0.45f;
 
-	// Grandma: the template's Quinn mannequin, tinted lavender, until a stylized grandma is imported cleanly.
-	// For another humanoid: set the mesh, bone names and scale here, and retarget the idle and falls onto her
-	// with CookieRetargetCommandlet. Launch.Mesh/Scale are unused (she's a ragdoll).
-	GrandmaMesh = TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple")));
-	GrandmaScale = 0.85f;
-	GrandmaIdleAnim = TSoftObjectPtr<UAnimSequence>(FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/MM_Idle.MM_Idle")));
+	// Grandma: the stylized grandma from Fab (FBX download, Mixamo rig), with the template's idle and falls
+	// retargeted onto her by CookieRetargetCommandlet. She imports ~4.9 m tall, so she's scaled to ~155 cm.
+	// Launch.Mesh/Scale are unused (she's a ragdoll).
+	GrandmaMesh = TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(TEXT("/Game/Cookie/Grandma/Model/SK_Grandma.SK_Grandma")));
+	GrandmaScale = 0.32f;
+	GrandmaPelvisBone = TEXT("Hips");
+	GrandmaHeadBone = TEXT("Head");
+	GrandmaLeftUpperArmBone = TEXT("LeftArm");
+	GrandmaRightUpperArmBone = TEXT("RightArm");
+	GrandmaIdleAnim = TSoftObjectPtr<UAnimSequence>(FSoftObjectPath(TEXT("/Game/Cookie/Grandma/Anims/Grandma_MM_Idle.Grandma_MM_Idle")));
 	for (const TCHAR* Fall : { TEXT("MM_Death_Back_01"), TEXT("MM_Death_Front_01"), TEXT("MM_Death_Front_02"),
 		TEXT("MM_Death_Front_03"), TEXT("MM_Death_Left_01"), TEXT("MM_Death_Right_01") })
 	{
-		GrandmaGetUpAnims.Emplace(FSoftObjectPath(FString::Printf(TEXT("/Game/Characters/Mannequins/Anims/Death/%s.%s"), Fall, Fall)));
+		GrandmaGetUpAnims.Emplace(FSoftObjectPath(FString::Printf(TEXT("/Game/Cookie/Grandma/Anims/Grandma_%s.Grandma_%s"), Fall, Fall)));
 	}
 
 	Grandma.DisplayName = NSLOCTEXT("CookieGame", "Grandma", "Grandma");
@@ -58,7 +62,7 @@ UCookieGameSettings::UCookieGameSettings()
 	Grandma.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(CylinderPath));
 	Grandma.Launch.Scale = FVector(0.4, 0.4, 1.5);
 	Grandma.Launch.Color = FLinearColor(0.7f, 0.55f, 0.85f);
-	Grandma.Launch.bPlaceholderMaterial = true;
+	Grandma.Launch.bPlaceholderMaterial = false;
 	Grandma.Launch.LaunchSpeed = 900.f;
 	Grandma.Launch.SpawnDistance = 130.f;
 	Grandma.Launch.TumbleDegreesPerSecond = 120.f;
