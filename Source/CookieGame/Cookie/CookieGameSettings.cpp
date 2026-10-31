@@ -4,32 +4,35 @@
 
 namespace
 {
-	// Engine placeholder shapes, tinted with PlaceholderMaterial.
-	const TCHAR* CylinderPath = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
-	const TCHAR* CubePath = TEXT("/Engine/BasicShapes/Cube.Cube");
+	// Stylized meshes from the Low Poly Interior kit (Fab), with their own palette material.
+	const TCHAR* CookieMeshPath = TEXT("/Game/LowPolyInterior/Meshes/KitchenObjects/Mesh_KitchenObjects_Cookie_01.Mesh_KitchenObjects_Cookie_01");
+	const TCHAR* ToasterMeshPath = TEXT("/Game/LowPolyInterior/Meshes/KitchenObjects/Mesh_KitchenObjects_Toaster.Mesh_KitchenObjects_Toaster");
 	const TCHAR* PlaceholderMaterialPath = TEXT("/Game/Cookie/M_CookiePlaceholder.M_CookiePlaceholder");
+	const TCHAR* CylinderPath = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
 }
 
 UCookieGameSettings::UCookieGameSettings()
 {
 	PlaceholderMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(PlaceholderMaterialPath));
 
-	// Cookie: a flat brown disc, 25 cm across.
-	Cookie.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(CylinderPath));
-	Cookie.Scale = FVector(0.25, 0.25, 0.05);
+	// Cookie: the kit's 13 cm cookie, doubled so it reads from across the room.
+	Cookie.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(CookieMeshPath));
+	Cookie.Scale = FVector(2.0);
+	Cookie.bPlaceholderMaterial = false;
 	Cookie.Color = FLinearColor(0.55f, 0.33f, 0.12f);
 	Cookie.LaunchSpeed = 1100.f;
 	Cookie.SpawnDistance = 60.f;
 	Cookie.TumbleDegreesPerSecond = 360.f;
 	Cookie.bUseCCD = true;
 
-	// Toaster oven: a grey box.
+	// Toaster oven: the kit's toaster, scaled up to a chunky 50 cm.
 	ToasterOven.DisplayName = NSLOCTEXT("CookieGame", "ToasterOven", "Toaster Oven");
 	ToasterOven.BaseCost = 15.0;
 	ToasterOven.CookiesPerSecond = 0.5f;
 	ToasterOven.EmitIntervalSeconds = 4.f;
-	ToasterOven.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(CubePath));
-	ToasterOven.Launch.Scale = FVector(0.5, 0.35, 0.3);
+	ToasterOven.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(ToasterMeshPath));
+	ToasterOven.Launch.Scale = FVector(1.6);
+	ToasterOven.Launch.bPlaceholderMaterial = false;
 	ToasterOven.Launch.Color = FLinearColor(0.6f, 0.6f, 0.65f);
 	ToasterOven.Launch.LaunchSpeed = 900.f;
 	ToasterOven.Launch.SpawnDistance = 110.f;

@@ -40,6 +40,7 @@ void ACookieSettledManager::BeginPlay()
 	// Pile core: a darker mound, so gaps between the surface cookies read as shadowed cookies further in.
 	FCookieLaunchSpec PileSpec = Settings.Cookie;
 	PileSpec.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(SpherePath));
+	PileSpec.bPlaceholderMaterial = true;
 	PileSpec.Color = Settings.Cookie.Color * Settings.PileCoreBrightness;
 	PileInstances = MakeInstances(TEXT("CookiePiles"), PileSpec);
 	PileInstances->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
@@ -55,13 +56,16 @@ UInstancedStaticMeshComponent* ACookieSettledManager::MakeInstances(const TCHAR*
 	Instances->SetupAttachment(RootComponent);
 	Instances->SetMobility(EComponentMobility::Movable);
 	Instances->SetStaticMesh(Spec.Mesh.LoadSynchronous());
-	Instances->SetMaterial(0, UCookieGameSettings::Get().PlaceholderMaterial.LoadSynchronous());
 	Instances->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 	Instances->RegisterComponent();
 
-	if (UMaterialInstanceDynamic* Material = Instances->CreateDynamicMaterialInstance(0))
+	if (Spec.bPlaceholderMaterial)
 	{
-		Material->SetVectorParameterValue(TEXT("Color"), Spec.Color);
+		Instances->SetMaterial(0, UCookieGameSettings::Get().PlaceholderMaterial.LoadSynchronous());
+		if (UMaterialInstanceDynamic* Material = Instances->CreateDynamicMaterialInstance(0))
+		{
+			Material->SetVectorParameterValue(TEXT("Color"), Spec.Color);
+		}
 	}
 	return Instances;
 }

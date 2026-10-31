@@ -109,11 +109,14 @@ void ACookieLaunchable::Launch(const FCookieLaunchSpec& Spec, const FVector& Vel
 {
 	Mesh->SetStaticMesh(Spec.Mesh.LoadSynchronous());
 	Mesh->SetWorldScale3D(Spec.Scale);
-	Mesh->SetMaterial(0, UCookieGameSettings::Get().PlaceholderMaterial.LoadSynchronous());
 
-	if (UMaterialInstanceDynamic* Material = Mesh->CreateDynamicMaterialInstance(0))
+	if (Spec.bPlaceholderMaterial)
 	{
-		Material->SetVectorParameterValue(TEXT("Color"), Spec.Color);
+		Mesh->SetMaterial(0, UCookieGameSettings::Get().PlaceholderMaterial.LoadSynchronous());
+		if (UMaterialInstanceDynamic* Material = Mesh->CreateDynamicMaterialInstance(0))
+		{
+			Material->SetVectorParameterValue(TEXT("Color"), Spec.Color);
+		}
 	}
 
 	if (Spec.Bounciness > 0.f)

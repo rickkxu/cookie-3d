@@ -28,6 +28,11 @@ struct FCookieLaunchSpec
 	UPROPERTY(EditAnywhere, Category = "Launch")
 	FVector Scale = FVector(1.0);
 
+	// Tints the mesh with the flat PlaceholderMaterial in Color. Turn off for real meshes that bring their own materials.
+	UPROPERTY(EditAnywhere, Category = "Launch")
+	bool bPlaceholderMaterial = true;
+
+	// Placeholder tint, and the item's hotbar swatch.
 	UPROPERTY(EditAnywhere, Category = "Launch")
 	FLinearColor Color = FLinearColor::White;
 
