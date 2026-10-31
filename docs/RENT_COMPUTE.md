@@ -5,10 +5,8 @@ and stream its desktop to whatever device you have.
 
 ## What you need on your side
 
-- Any device with a screen and good internet (15+ Mbps, wired or 5 GHz Wi-Fi). A laptop, Chromebook,
-  tablet, or even a phone can work.
-- **A physical keyboard and mouse.** This is a first-person game with WASD + mouse look. A touchscreen alone
-  won't do. A cheap Bluetooth keyboard and mouse is fine for a tablet.
+- Your MacBook Air with good internet (15+ Mbps, 5 GHz Wi-Fi or wired).
+- **A mouse.** A trackpad is painful for first-person mouse look.
 
 ## Minimum spec for the rented machine
 
@@ -22,29 +20,27 @@ and stream its desktop to whatever device you have.
 
 The disk is the most common gotcha. The engine alone is ~60–100 GB, plus Visual Studio and your project.
 
-## Option A (recommended): a persistent cloud PC, e.g. Shadow
+## Option A (current plan): Vagon
 
-A monthly subscription gives you a Windows PC that stays put between sessions, like owning a computer.
-You connect from an app on Windows/Mac/Android/iOS or from a browser.
+Hourly cloud PC with Unreal pre-installed. You connect from a Mac app or a browser.
 
-- **Pros:** simplest by far, no server admin, nothing to forget to switch off, predictable monthly price.
-- **Cons:** you don't pick the exact GPU, and you'll need to add storage to reach 250 GB+.
-- **Before you pay:** check the current plan's GPU, RAM, and storage add-ons against the table above.
+- Start with the cheap trial and test streaming over your own Wi-Fi before paying for more.
+- Pick a tier with an **A10G-class GPU** or better for the Unreal editor.
+- Check that the pre-installed Unreal is **5.8**, and that **Visual Studio with C++ game development** is
+  installed. This project is C++. If Visual Studio is missing, run `scripts/setup-windows.ps1`.
+- Check how long storage persists between sessions and what it costs. Push your work to GitHub at
+  the end of every session anyway.
 
-## Option B: hourly GPU server (AWS / Azure / Google Cloud)
+## Other options
 
-For example AWS EC2 `g5.2xlarge` or `g6.2xlarge` (Windows), connected with **Amazon DCV**, which works
-in a browser.
+- **AirGPU:** often cheaper per hour, but you install Unreal yourself (use `scripts/setup-windows.ps1`).
+- **Shadow:** monthly plan, worth it only if you use it heavily.
+- **AWS (e.g. EC2 g5/g6 + Amazon DCV):** powerful but complicated to set up, and new accounts often need
+  a GPU quota increase. Not recommended for a first project.
 
-- **Pros:** more power, pay only for the hours you use.
-- **Cons:** more setup, and new accounts often have a **GPU quota of 0**. You must request a
-  "Running On-Demand G and VT instances" quota increase, which can take a day. Disk is billed even
-  while the machine is stopped.
-- **Stop the instance every time you finish.** A forgotten GPU instance can cost hundreds per month.
-- Windows Server doesn't ship `winget`, so install the tools from the script by hand.
-
-**Avoid** Linux-only GPU marketplaces built for AI training (container-only, no desktop). The Unreal
-editor is far easier to use on Windows.
+Prices change often, so check each site before paying. **Shut the machine down whenever you step away**,
+which stops the hourly billing. Expect the first session to include 30-60+ minutes of installs and
+shader compiling.
 
 ## Once the machine is running
 
@@ -59,5 +55,6 @@ editor is far easier to use on Windows.
 ## Streaming tips
 
 - Set the stream to 60 fps, and lower the resolution before lowering the quality.
-- Make sure the streaming client **captures the mouse** (relative mouse mode), or mouse-look will spin
-  wildly. Shadow, Parsec, and DCV all have this setting.
+- Make sure the streaming client **captures the mouse** (relative mouse mode), or mouse look will spin
+  wildly.
+- On a Mac keyboard, check how Cmd/Ctrl are mapped in the streaming client, since Unreal shortcuts use Ctrl.
