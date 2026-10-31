@@ -34,6 +34,18 @@ public:
 
 	int32 GetSettledCookieCount() const;
 	int32 GetSettledItemCount(ECookieItem Item) const;
+
+	const UInstancedStaticMeshComponent* GetItemInstances(ECookieItem Item) const { return ItemInstances[static_cast<int32>(Item)]; }
+
+	// Removes one settled item and returns where it was.
+	FTransform RemoveItemInstance(ECookieItem Item, int32 Index);
+
+	// Frozen grandmas are drawn with a static copy of a live grandma's pose, baked at runtime.
+	bool HasGrandmaPose() const { return bHasGrandmaPose; }
+	void SetGrandmaPose(UStaticMesh* Pose);
+
+	// Total milliseconds spent emitting from settled items and refreshing piles since the last call.
+	void ConsumeTimings(double& OutEmitMs, double& OutPileMs);
 	int32 GetPileCount() const { return Piles.Num(); }
 	int64 GetPiledCookieCount() const { return PiledCookies; }
 
@@ -76,4 +88,9 @@ private:
 	TArray<float> EmitAccumulators;
 
 	float PileRefreshTimer = 0.f;
+	bool bHasGrandmaPose = false;
+
+	// Time spent in Tick since the last ConsumeTimings, for the stats log.
+	double EmitMs = 0.0;
+	double PileMs = 0.0;
 };

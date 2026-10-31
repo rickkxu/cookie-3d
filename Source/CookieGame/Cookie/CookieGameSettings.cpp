@@ -1,4 +1,6 @@
 #include "CookieGameSettings.h"
+#include "Animation/AnimSequence.h"
+#include "Engine/SkeletalMesh.h"
 
 namespace
 {
@@ -33,7 +35,15 @@ UCookieGameSettings::UCookieGameSettings()
 	ToasterOven.Launch.SpawnDistance = 110.f;
 	ToasterOven.Launch.Bounciness = 0.45f;
 
-	// Grandma: a tall lavender cylinder standing in for a capsule.
+	// Grandma: the template's Quinn mannequin, tinted lavender. Launch.Mesh/Scale are unused (she's a ragdoll).
+	GrandmaMesh = TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple")));
+	GrandmaIdleAnim = TSoftObjectPtr<UAnimSequence>(FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/MM_Idle.MM_Idle")));
+	for (const TCHAR* Fall : { TEXT("MM_Death_Back_01"), TEXT("MM_Death_Front_01"), TEXT("MM_Death_Front_02"),
+		TEXT("MM_Death_Front_03"), TEXT("MM_Death_Left_01"), TEXT("MM_Death_Right_01") })
+	{
+		GrandmaGetUpAnims.Emplace(FSoftObjectPath(FString::Printf(TEXT("/Game/Characters/Mannequins/Anims/Death/%s.%s"), Fall, Fall)));
+	}
+
 	Grandma.DisplayName = NSLOCTEXT("CookieGame", "Grandma", "Grandma");
 	Grandma.BaseCost = 100.0;
 	Grandma.CookiesPerSecond = 2.f;

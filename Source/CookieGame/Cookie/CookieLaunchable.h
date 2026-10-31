@@ -25,7 +25,8 @@ public:
 	static ACookieLaunchable* SpawnCookie(UWorld* World, const FVector& Location, const FRotator& Rotation, const FVector& Velocity);
 
 	// Spawns and throws a purchased item, which then starts producing physical cookies.
-	static ACookieLaunchable* SpawnItem(UWorld* World, ECookieItem Item, const FVector& Location, const FRotator& Rotation, const FVector& Velocity);
+	// Grandmas are their own actor (ACookieGrandma); everything else is one of these.
+	static AActor* SpawnItem(UWorld* World, ECookieItem Item, const FVector& Location, const FRotator& Rotation, const FVector& Velocity);
 
 	// A produced cookie pops up out of Top. Past the physical cookie cap it goes onto a pile instead.
 	static void PopCookie(UWorld* World, const FVector& Top);

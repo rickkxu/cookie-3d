@@ -1,10 +1,13 @@
 #include "CookieGameMode.h"
 #include "CookieCharacter.h"
 #include "CookieGameSettings.h"
+#include "CookieGrandma.h"
 #include "CookieHUD.h"
 #include "CookieLaunchable.h"
 #include "CookieSettledManager.h"
 #include "EngineUtils.h"
+#include "RHI.h"
+#include "RenderCore.h"
 #include "GameFramework/PlayerStart.h"
 #include "TimerManager.h"
 
@@ -33,6 +36,13 @@ void ACookieGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	Cookies += GetCookiesPerSecond() * DeltaSeconds;
+
+	GrandmaBudgetSeconds += DeltaSeconds;
+	if (GrandmaBudgetSeconds >= 0.5f)
+	{
+		GrandmaBudgetSeconds = 0.f;
+		ACookieGrandma::UpdateAnimationBudget(GetWorld());
+	}
 
 	if (UCookieGameSettings::Get().bLogStats)
 	{
@@ -130,11 +140,34 @@ void ACookieGameMode::LogStats(float DeltaSeconds)
 		++FlyingThings;
 	}
 
+	int32 Grandmas = 0;
+	int32 BakingGrandmas = 0;
+	int32 AnimatingGrandmas = 0;
+	for (TActorIterator<ACookieGrandma> It(GetWorld()); It; ++It)
+	{
+		++Grandmas;
+		BakingGrandmas += It->IsBaking() ? 1 : 0;
+		AnimatingGrandmas += It->IsAnimating() ? 1 : 0;
+	}
+
+	double EmitMs = 0.0;
+	double PileMs = 0.0;
+	if (Settled)
+	{
+		Settled->ConsumeTimings(EmitMs, PileMs);
+	}
+
+	// The same thread timings "stat unit" shows: whichever is largest is what limits the frame rate.
 	UE_LOG(LogTemp, Display,
-		TEXT("Cookie stats: %.0f fps | flying %d (cookies %d) | settled cookies %d, ovens %d, grandmas %d | piles %d holding %lld"),
-		StatsFrames / StatsSeconds, FlyingThings, FlyingCookies,
+		TEXT("Cookie stats: %.0f fps (game %.1f ms, render %.1f ms, gpu %.1f ms; emit %.2f, piles %.2f ms/frame) | flying %d (cookies %d) | settled cookies %d, ovens %d | grandmas %d live (baking %d, animating %d), %d frozen | piles %d holding %lld"),
+		StatsFrames / StatsSeconds,
+		FPlatformTime::ToMilliseconds(GGameThreadTime), FPlatformTime::ToMilliseconds(GRenderThreadTime),
+		FPlatformTime::ToMilliseconds(RHIGetGPUFrameCycles()),
+		EmitMs / StatsFrames, PileMs / StatsFrames,
+		FlyingThings, FlyingCookies,
 		Settled ? Settled->GetSettledCookieCount() : 0,
 		Settled ? Settled->GetSettledItemCount(ECookieItem::ToasterOven) : 0,
+		Grandmas, BakingGrandmas, AnimatingGrandmas,
 		Settled ? Settled->GetSettledItemCount(ECookieItem::Grandma) : 0,
 		Settled ? Settled->GetPileCount() : 0,
 		Settled ? Settled->GetPiledCookieCount() : int64(0));

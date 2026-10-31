@@ -1,0 +1,404 @@
+#include "CookieGrandma.h"
+#include "Algo/RandomShuffle.h"
+#include "Algo/Sort.h"
+#include "Animation/AnimSequence.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "CookieGameMode.h"
+#include "CookieGameSettings.h"
+#include "CookieLaunchable.h"
+#include "CookieSettledManager.h"
+#include "Engine/SkeletalMesh.h"
+#include "Engine/StaticMesh.h"
+#include "Rendering/SkeletalMeshRenderData.h"
+#include "StaticMeshAttributes.h"
+#include "Engine/World.h"
+#include "EngineUtils.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "TimerManager.h"
+
+namespace
+{
+	constexpr float SettleCheckSeconds = 0.1f;
+
+	// UE5 mannequin bones.
+	const FName Pelvis(TEXT("pelvis"));
+	const FName Head(TEXT("head"));
+	const FName LeftShoulder(TEXT("upperarm_l"));
+	const FName RightShoulder(TEXT("upperarm_r"));
+
+	/**
+	 * Copies the skeletal mesh's current pose (at the given detail level) into a new static mesh,
+	 * so hundreds of frozen grandmas can be drawn as cheap instances.
+	 * Returns null if the mesh's vertex data isn't readable on the CPU.
+	 */
+	UStaticMesh* BakeStaticPose(USkeletalMeshComponent* Body, int32 LODIndex)
+	{
+		FSkeletalMeshRenderData* RenderData = Body->GetSkeletalMeshRenderData();
+		if (!RenderData || RenderData->LODRenderData.IsEmpty())
+		{
+			return nullptr;
+		}
+		LODIndex = FMath::Clamp(LODIndex, 0, RenderData->LODRenderData.Num() - 1);
+		const FSkeletalMeshLODRenderData& LOD = RenderData->LODRenderData[LODIndex];
+		if (!LOD.StaticVertexBuffers.PositionVertexBuffer.GetVertexData() || !LOD.MultiSizeIndexContainer.IsIndexBufferValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Grandma pose bake: mesh LOD %d isn't CPU-readable; frozen grandmas stay skeletal."), LODIndex);
+			return nullptr;
+		}
+
+		// Vertex positions in the current pose, in component space.
+		TArray<FMatrix44f> RefToLocals;
+		Body->CacheRefToLocalMatrices(RefToLocals);
+		TArray<FVector3f> Positions;
+		USkinnedMeshComponent::ComputeSkinnedPositions(Body, Positions, RefToLocals, LOD, LOD.SkinWeightVertexBuffer);
+
+		const FRawStaticIndexBuffer16or32Interface* Indices = LOD.MultiSizeIndexContainer.GetIndexBuffer();
+		const int32 NumTriangles = Indices->Num() / 3;
+
+		// Smooth normals from the posed triangles.
+		TArray<FVector3f> Normals;
+		Normals.SetNumZeroed(Positions.Num());
+		for (int32 Tri = 0; Tri < NumTriangles; ++Tri)
+		{
+			const uint32 A = Indices->Get(Tri * 3), B = Indices->Get(Tri * 3 + 1), C = Indices->Get(Tri * 3 + 2);
+			const FVector3f Face = FVector3f::CrossProduct(Positions[C] - Positions[A], Positions[B] - Positions[A]);
+			Normals[A] += Face;
+			Normals[B] += Face;
+			Normals[C] += Face;
+		}
+
+		FMeshDescription Description;
+		FStaticMeshAttributes Attributes(Description);
+		Attributes.Register();
+		Description.ReserveNewVertices(Positions.Num());
+		Description.ReserveNewVertexInstances(Positions.Num());
+		Description.ReserveNewTriangles(NumTriangles);
+
+		TArray<FVertexInstanceID> Instances;
+		Instances.Reserve(Positions.Num());
+		for (int32 Index = 0; Index < Positions.Num(); ++Index)
+		{
+			const FVertexID Vertex = Description.CreateVertex();
+			Attributes.GetVertexPositions()[Vertex] = Positions[Index];
+			const FVertexInstanceID Instance = Description.CreateVertexInstance(Vertex);
+			const FVector3f Normal = Normals[Index].GetSafeNormal(UE_SMALL_NUMBER, FVector3f::UpVector);
+			Attributes.GetVertexInstanceNormals()[Instance] = Normal;
+			Attributes.GetVertexInstanceTangents()[Instance] = FVector3f::CrossProduct(Normal, FVector3f::ForwardVector).GetSafeNormal(UE_SMALL_NUMBER, FVector3f::RightVector);
+			Attributes.GetVertexInstanceBinormalSigns()[Instance] = 1.f;
+			Instances.Add(Instance);
+		}
+
+		// One material for the whole body: it's a flat-colored placeholder anyway.
+		const FPolygonGroupID Group = Description.CreatePolygonGroup();
+		Attributes.GetPolygonGroupMaterialSlotNames()[Group] = TEXT("Body");
+		for (int32 Tri = 0; Tri < NumTriangles; ++Tri)
+		{
+			Description.CreateTriangle(Group, { Instances[Indices->Get(Tri * 3)], Instances[Indices->Get(Tri * 3 + 1)], Instances[Indices->Get(Tri * 3 + 2)] });
+		}
+
+		UStaticMesh* Mesh = NewObject<UStaticMesh>(Body->GetWorld(), TEXT("FrozenGrandmaPose"));
+		Mesh->GetStaticMaterials().Add(FStaticMaterial(UCookieGameSettings::Get().PlaceholderMaterial.LoadSynchronous(), TEXT("Body")));
+		UStaticMesh::FBuildMeshDescriptionsParams Params;
+		Params.bBuildSimpleCollision = true;
+		Params.bFastBuild = true;
+		Mesh->BuildFromMeshDescriptions({ &Description }, Params);
+		return Mesh;
+	}
+}
+
+ACookieGrandma::ACookieGrandma()
+{
+	PrimaryActorTick.bCanEverTick = false;
+
+	Body = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Body"));
+	Body->SetCollisionProfileName(TEXT("Ragdoll"));
+	// Off-screen grandmas don't evaluate animation.
+	Body->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+	RootComponent = Body;
+}
+
+ACookieGrandma* ACookieGrandma::Spawn(UWorld* World, const FVector& Location, const FRotator& Rotation, const FVector& Velocity)
+{
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	ACookieGrandma* Grandma = World->SpawnActor<ACookieGrandma>(Location, Rotation, Params);
+	if (Grandma)
+	{
+		Grandma->Launch(Velocity);
+	}
+	return Grandma;
+}
+
+ACookieGrandma* ACookieGrandma::SpawnBaking(UWorld* World, const FTransform& Transform)
+{
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	ACookieGrandma* Grandma = World ? World->SpawnActor<ACookieGrandma>(Transform.GetLocation(), Transform.Rotator(), Params) : nullptr;
+	if (Grandma)
+	{
+		Grandma->ApplyLook();
+		Grandma->StartEmitting();
+		Grandma->StartBaking();
+	}
+	return Grandma;
+}
+
+bool ACookieGrandma::IsAnimating() const
+{
+	return State != EState::Baking || !Body->bPauseAnims;
+}
+
+void ACookieGrandma::ApplyLook()
+{
+	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
+
+	Body->SetSkeletalMeshAsset(Settings.GrandmaMesh.LoadSynchronous());
+	Body->SetWorldScale3D(FVector(Settings.GrandmaScale));
+
+	// Placeholder look: every material slot gets the flat color material in grandma lavender.
+	UMaterialInterface* Placeholder = Settings.PlaceholderMaterial.LoadSynchronous();
+	for (int32 Slot = 0; Slot < Body->GetNumMaterials(); ++Slot)
+	{
+		Body->SetMaterial(Slot, Placeholder);
+		if (UMaterialInstanceDynamic* Material = Body->CreateDynamicMaterialInstance(Slot))
+		{
+			Material->SetVectorParameterValue(TEXT("Color"), Settings.Grandma.Launch.Color);
+		}
+	}
+}
+
+void ACookieGrandma::StartEmitting()
+{
+	// Random first delay so a burst of purchases doesn't emit in lockstep.
+	const float Interval = UCookieGameSettings::Get().Grandma.EmitIntervalSeconds;
+	const float FirstDelay = FMath::FRandRange(0.5f, 1.f) * Interval;
+	GetWorldTimerManager().SetTimer(EmitTimer, this, &ACookieGrandma::EmitCookie, Interval, true, FirstDelay);
+}
+
+void ACookieGrandma::Launch(const FVector& Velocity)
+{
+	ApplyLook();
+
+	// Full ragdoll from the moment she leaves the player.
+	Body->SetSimulatePhysics(true);
+	Body->SetAllPhysicsLinearVelocity(Velocity);
+	Body->SetPhysicsAngularVelocityInDegrees(FMath::VRand() * UCookieGameSettings::Get().Grandma.Launch.TumbleDegreesPerSecond, false, Pelvis);
+
+	GetWorldTimerManager().SetTimer(SettleTimer, this, &ACookieGrandma::CheckSettled, SettleCheckSeconds, true);
+	StartEmitting();
+}
+
+void ACookieGrandma::EmitCookie()
+{
+	const FBoxSphereBounds& Bounds = Body->Bounds;
+	ACookieLaunchable::PopCookie(GetWorld(), Bounds.Origin + FVector::UpVector * Bounds.BoxExtent.Z);
+}
+
+void ACookieGrandma::CheckSettled()
+{
+	// Same rule as other thrown things (see ACookieLaunchable::CheckSettled), judged by her pelvis.
+	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
+	FlyingSeconds += SettleCheckSeconds;
+	const float Tolerance = FlyingSeconds >= Settings.MaxFlyingSeconds ? 10.f : 1.f;
+	const bool bStill = Body->GetPhysicsLinearVelocity(Pelvis).Size() < Settings.SettleSpeed * Tolerance;
+	StillSeconds = bStill ? StillSeconds + SettleCheckSeconds : 0.f;
+	if (StillSeconds >= Settings.SettleSeconds)
+	{
+		GetWorldTimerManager().ClearTimer(SettleTimer);
+		StartGettingUp();
+	}
+}
+
+void ACookieGrandma::UpdateAnimationBudget(UWorld* World)
+{
+	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
+	const APlayerController* Player = World ? World->GetFirstPlayerController() : nullptr;
+	const APawn* Pawn = Player ? Player->GetPawn() : nullptr;
+	const FVector Viewer = Pawn ? Pawn->GetActorLocation() : FVector::ZeroVector;
+	const ACookieGameMode* GameMode = World ? World->GetAuthGameMode<ACookieGameMode>() : nullptr;
+	ACookieSettledManager* Settled = GameMode ? GameMode->GetSettled() : nullptr;
+	const bool bCanFreeze = Settled && Settled->HasGrandmaPose();
+
+	// Every baking grandma, whether she's a live actor or a frozen instance, nearest first.
+	struct FCandidate
+	{
+		double DistSq;
+		ACookieGrandma* Actor;
+		int32 Instance;
+	};
+	TArray<FCandidate> Candidates;
+	for (TActorIterator<ACookieGrandma> It(World); It; ++It)
+	{
+		if (It->IsBaking())
+		{
+			Candidates.Add({ FVector::DistSquared(Viewer, It->GetActorLocation()), *It, INDEX_NONE });
+		}
+	}
+	if (bCanFreeze)
+	{
+		const UInstancedStaticMeshComponent* Frozen = Settled->GetItemInstances(ECookieItem::Grandma);
+		for (int32 Index = 0; Index < Frozen->GetInstanceCount(); ++Index)
+		{
+			FTransform Transform;
+			Frozen->GetInstanceTransform(Index, Transform, /*bWorldSpace=*/ true);
+			Candidates.Add({ FVector::DistSquared(Viewer, Transform.GetLocation()), nullptr, Index });
+		}
+	}
+	Algo::SortBy(Candidates, &FCandidate::DistSq);
+
+	// The nearest few are live, animated actors. Everyone else is a frozen instance (or, if her pose
+	// couldn't be baked, a paused actor). Swapping is limited per update so walking around stays smooth.
+	const double MaxDistSq = FMath::Square(Settings.GrandmaAnimateRadius);
+	TArray<int32> ToThaw;
+	for (int32 Rank = 0; Rank < Candidates.Num(); ++Rank)
+	{
+		const FCandidate& Candidate = Candidates[Rank];
+		const bool bAnimate = Pawn && Rank < Settings.MaxAnimatedGrandmas && Candidate.DistSq < MaxDistSq;
+		if (Candidate.Actor)
+		{
+			if (bAnimate || !bCanFreeze)
+			{
+				Candidate.Actor->SetAnimated(bAnimate);
+			}
+			else
+			{
+				Settled->AddItem(ECookieItem::Grandma, Candidate.Actor->GetActorTransform());
+				Candidate.Actor->Destroy();
+			}
+		}
+		else if (bAnimate && ToThaw.Num() < Settings.MaxGrandmaThawsPerUpdate)
+		{
+			ToThaw.Add(Candidate.Instance);
+		}
+	}
+
+	// Highest index first, so removing one doesn't shift the others.
+	ToThaw.Sort(TGreater<int32>());
+	for (int32 Instance : ToThaw)
+	{
+		SpawnBaking(World, Settled->RemoveItemInstance(ECookieItem::Grandma, Instance));
+	}
+}
+
+void ACookieGrandma::SetAnimated(bool bAnimate)
+{
+	if (bAnimate == !Body->bPauseAnims)
+	{
+		return;
+	}
+
+	// A frozen grandma costs no CPU (no animation, no bone updates) and little GPU (her lowest-detail mesh).
+	Body->bPauseAnims = !bAnimate;
+	Body->bNoSkeletonUpdate = !bAnimate;
+	Body->SetComponentTickEnabled(bAnimate);
+	Body->SetForcedLOD(bAnimate ? 0 : Body->GetNumLODs());
+}
+
+FVector ACookieGrandma::GetChestDirection() const
+{
+	// Shoulder line crossed with the spine points out of her chest, whatever her bones' axes are.
+	const FVector Spine = Body->GetBoneLocation(Head) - Body->GetBoneLocation(Pelvis);
+	const FVector Shoulders = Body->GetBoneLocation(RightShoulder) - Body->GetBoneLocation(LeftShoulder);
+	return FVector::CrossProduct(Shoulders, Spine).GetSafeNormal();
+}
+
+FVector ACookieGrandma::GetHeadDirection() const
+{
+	return (Body->GetBoneLocation(Head) - Body->GetBoneLocation(Pelvis)).GetSafeNormal2D();
+}
+
+void ACookieGrandma::PoseAtEndOf(UAnimSequence* Anim)
+{
+	Body->PlayAnimation(Anim, /*bLooping=*/ false);
+	Body->SetPosition(Anim->GetPlayLength(), /*bFireNotifies=*/ false);
+	Body->TickAnimation(0.f, false);
+	Body->RefreshBoneTransforms();
+}
+
+void ACookieGrandma::StartGettingUp()
+{
+	State = EState::GettingUp;
+	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
+
+	// Remember how she landed before the ragdoll is switched off.
+	const FVector LyingPelvis = Body->GetBoneLocation(Pelvis);
+	const FVector LyingHeadDirection = GetHeadDirection();
+	const bool bFaceUp = GetChestDirection().Z > 0.0;
+
+	FHitResult Hit;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(GrandmaGround), false, this);
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, LyingPelvis, LyingPelvis - FVector(0.0, 0.0, 300.0), ECC_Visibility, Params);
+	const double GroundZ = bHit ? Hit.ImpactPoint.Z : LyingPelvis.Z - 15.0;
+
+	Body->SetSimulatePhysics(false);
+	SetActorLocationAndRotation(FVector(LyingPelvis.X, LyingPelvis.Y, GroundZ), FRotator::ZeroRotator, false, nullptr, ETeleportType::TeleportPhysics);
+
+	// Pick a fall whose final pose lies the same way up as she does.
+	TArray<TSoftObjectPtr<UAnimSequence>> Candidates = Settings.GrandmaGetUpAnims;
+	Algo::RandomShuffle(Candidates);
+	UAnimSequence* GetUp = nullptr;
+	for (const TSoftObjectPtr<UAnimSequence>& Candidate : Candidates)
+	{
+		UAnimSequence* Anim = Candidate.LoadSynchronous();
+		if (!Anim)
+		{
+			continue;
+		}
+		PoseAtEndOf(Anim);
+		if ((GetChestDirection().Z > 0.0) == bFaceUp)
+		{
+			GetUp = Anim;
+			break;
+		}
+	}
+	if (!GetUp)
+	{
+		StartBaking();
+		return;
+	}
+
+	// Turn and shift the animation's lying pose onto the ragdoll's: head the same way, pelvis in the same spot.
+	const FVector AnimHeadDirection = GetHeadDirection();
+	const double Yaw = FMath::RadiansToDegrees(FMath::Atan2(LyingHeadDirection.Y, LyingHeadDirection.X)
+		- FMath::Atan2(AnimHeadDirection.Y, AnimHeadDirection.X));
+	const FVector PelvisOffset = (Body->GetBoneLocation(Pelvis) - GetActorLocation()) * FVector(1.0, 1.0, 0.0);
+	const FVector RotatedOffset = PelvisOffset.RotateAngleAxis(Yaw, FVector::UpVector);
+	SetActorLocationAndRotation(FVector(LyingPelvis.X - RotatedOffset.X, LyingPelvis.Y - RotatedOffset.Y, GroundZ),
+		FRotator(0.0, Yaw, 0.0), false, nullptr, ETeleportType::TeleportPhysics);
+
+	// Play the fall backwards: she gets up.
+	Body->SetPlayRate(-Settings.GrandmaGetUpPlayRate);
+	Body->Play(/*bLooping=*/ false);
+	const float Duration = GetUp->GetPlayLength() / Settings.GrandmaGetUpPlayRate;
+	GetWorldTimerManager().SetTimer(GetUpTimer, this, &ACookieGrandma::StartBaking, Duration, false);
+}
+
+void ACookieGrandma::StartBaking()
+{
+	State = EState::Baking;
+	if (UAnimSequence* Idle = UCookieGameSettings::Get().GrandmaIdleAnim.LoadSynchronous())
+	{
+		Body->PlayAnimation(Idle, /*bLooping=*/ true);
+		Body->SetPlayRate(1.f);
+		Body->SetPosition(FMath::FRandRange(0.f, Idle->GetPlayLength()), false);
+	}
+
+	// The first grandma to start baking is copied into a static mesh, the pose every frozen grandma uses.
+	const ACookieGameMode* GameMode = GetWorld()->GetAuthGameMode<ACookieGameMode>();
+	ACookieSettledManager* Settled = GameMode ? GameMode->GetSettled() : nullptr;
+	if (Settled && !Settled->HasGrandmaPose())
+	{
+		Body->TickAnimation(0.f, false);
+		Body->RefreshBoneTransforms();
+		Settled->SetGrandmaPose(BakeStaticPose(Body, UCookieGameSettings::Get().GrandmaFrozenLOD));
+	}
+	// From here UpdateAnimationBudget decides whether she animates.
+}

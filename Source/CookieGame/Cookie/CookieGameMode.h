@@ -57,6 +57,7 @@ private:
 	int32 StressPending[static_cast<int32>(ECookieItem::Count)] = {};
 	FTimerHandle StressTimer;
 
+	float GrandmaBudgetSeconds = 0.f;
 	float StatsSeconds = 0.f;
 	int32 StatsFrames = 0;
 };

@@ -4,6 +4,10 @@
 #include "Engine/DeveloperSettings.h"
 #include "CookieTypes.h"
 #include "Materials/MaterialInterface.h"
+
+class UAnimSequence;
+class USkeletalMesh;
+
 #include "CookieGameSettings.generated.h"
 
 /**
@@ -39,6 +43,41 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, Category = "Items")
 	FCookieItemSpec Grandma;
+
+	// Grandmas are ragdolls, so they use a skeletal mesh instead of Grandma.Launch.Mesh.
+	// Must use the UE5 mannequin skeleton: the bone names and animations below depend on it.
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
+	TSoftObjectPtr<USkeletalMesh> GrandmaMesh;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body", meta = (ClampMin = "0.1"))
+	float GrandmaScale = 0.85f;
+
+	// Falls that end lying down. Played backwards to get up, picking one that lies the same way up as she landed.
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
+	TArray<TSoftObjectPtr<UAnimSequence>> GrandmaGetUpAnims;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body", meta = (ClampMin = "0.1"))
+	float GrandmaGetUpPlayRate = 1.5f;
+
+	// Looped while she bakes.
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")
+	TSoftObjectPtr<UAnimSequence> GrandmaIdleAnim;
+
+	// Only this many baking grandmas animate, the ones nearest the player...
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body", meta = (ClampMin = "0"))
+	int32 MaxAnimatedGrandmas = 30;
+
+	// ...and only within this distance (cm). The rest freeze mid-bake into cheap instances.
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body", meta = (ClampMin = "0.0"))
+	float GrandmaAnimateRadius = 2500.f;
+
+	// Detail level of the mesh frozen grandmas use (0 = full detail). Quinn has 0-2.
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body", meta = (ClampMin = "0"))
+	int32 GrandmaFrozenLOD = 2;
+
+	// How many frozen grandmas can come back to life per budget update (2 per second), so walking into a crowd doesn't hitch.
+	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body", meta = (ClampMin = "1"))
+	int32 MaxGrandmaThawsPerUpdate = 4;
 
 	// The cookie shot by left-click.
 	UPROPERTY(Config, EditAnywhere, Category = "Launch")

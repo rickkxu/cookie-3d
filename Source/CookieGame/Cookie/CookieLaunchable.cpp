@@ -1,6 +1,7 @@
 #include "CookieLaunchable.h"
 #include "Components/StaticMeshComponent.h"
 #include "CookieGameMode.h"
+#include "CookieGrandma.h"
 #include "CookieGameSettings.h"
 #include "CookieSettledManager.h"
 #include "Engine/CollisionProfile.h"
@@ -41,8 +42,13 @@ ACookieLaunchable* ACookieLaunchable::SpawnCookie(UWorld* World, const FVector& 
 	return Cookie;
 }
 
-ACookieLaunchable* ACookieLaunchable::SpawnItem(UWorld* World, ECookieItem Item, const FVector& Location, const FRotator& Rotation, const FVector& Velocity)
+AActor* ACookieLaunchable::SpawnItem(UWorld* World, ECookieItem Item, const FVector& Location, const FRotator& Rotation, const FVector& Velocity)
 {
+	if (Item == ECookieItem::Grandma)
+	{
+		return ACookieGrandma::Spawn(World, Location, Rotation, Velocity);
+	}
+
 	const FCookieItemSpec& Spec = UCookieGameSettings::Get().GetItem(Item);
 	ACookieLaunchable* Thing = SpawnLaunched(World, Spec.Launch, Location, Rotation, Velocity);
 	if (Thing)

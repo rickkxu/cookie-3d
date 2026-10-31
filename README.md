@@ -7,16 +7,17 @@ The full design spec is in [`CLAUDE.md`](CLAUDE.md).
 
 | Build step | State |
 |---|---|
-| 1. Left-click shoots a cookie in an arc, counter goes up | Compiles; mouse input not playtested yet |
-| 2. Hold right-click rapid-fires grandmas, ramping rate, costs deducted | Compiles; mouse input not playtested yet |
-| 3. Hotbar (scroll wheel / 1–9), toaster ovens that bounce | Compiles; keyboard input not playtested yet |
-| 4. Helpers produce cookies over time and pop out physical cookies | Done, verified in stress test |
-| 5. Freeze-when-settled, instancing, cookie piles, stress test | Done, verified in stress test |
-| 6–8 | Not started |
+| 1. Left-click shoots a cookie in an arc, counter goes up | Done, playtested |
+| 2. Hold right-click rapid-fires grandmas, ramping rate, costs deducted | Done, playtested |
+| 3. Hotbar (scroll wheel / 1–9), toaster ovens that bounce | Done, playtested |
+| 4. Helpers produce cookies over time and pop out physical cookies | Done |
+| 5. Freeze-when-settled, instancing, cookie piles, stress test | Done |
+| 6. Grandmas ragdoll on landing, get up, bake; only nearby ones animate | Done (Quinn mannequin stand-in) |
+| 7–8 | Not started |
 
-Stress test (UE 5.8 editor PIE on the rented GPU, template level): empty scene ~48 fps. Dropping 150 ovens +
-400 grandmas at 20/s: 17–24 fps while ~150 things are in the air, back to ~44 fps once everything settles
-(500 cookies + 550 items + ~120 piles holding 10k+ cookies).
+Performance (UE 5.8 editor PIE on a Tesla T4, template level): empty scene ~48 fps; 30 ovens + 60 grandmas
+producing ~20 fps. The GPU sits at 99% and the render thread is the limit, not game code (<1 ms/frame).
+Lowering engine scalability (Lumen, virtual shadow maps) is the likely fix and hasn't been tried yet.
 
 ## 1. Rent a machine
 
@@ -33,8 +34,9 @@ then run [`scripts/setup-windows.ps1`](scripts/setup-windows.ps1) on it.
    - `Source/CookieGame/Cookie/` → `<Project>/Source/CookieGame/Cookie/`
    - `Content/Cookie/` → `<Project>/Content/Cookie/` (the placeholder color material)
    - `CLAUDE.md`, `README.md`, `docs/`, `scripts/`, `.gitignore` → `<Project>/`
-5. Open `<Project>/Source/CookieGame/CookieGame.Build.cs` and add `"DeveloperSettings"` to
-   `PublicDependencyModuleNames`. `"EnhancedInput"` should already be listed; add it if it isn't.
+5. Open `<Project>/Source/CookieGame/CookieGame.Build.cs` and add `"DeveloperSettings"`, `"PhysicsCore"`,
+   `"MeshDescription"`, `"StaticMeshDescription"`, `"RenderCore"` and `"RHI"` to `PublicDependencyModuleNames`,
+   and `"CookieGame/Cookie"` to `PublicIncludePaths`. `"EnhancedInput"` should already be listed; add it if it isn't.
 6. Right-click `CookieGame.uproject` → **Generate Visual Studio project files**, then double-click
    `CookieGame.uproject` and let it rebuild.
 
@@ -59,7 +61,7 @@ To test buying quickly, set **Project Settings → Game → Cookie Game → Star
 Every tunable number lives on that settings page (`Cookie/CookieGameSettings.cpp` holds the defaults).
 
 Stress test: open the console (`~`) during play and run `CookieStress 100 300` (ovens, grandmas) to rain free items
-around you. Set **Stress Test → Log Stats** to print fps and object counts to the Output Log every 2 seconds.
+around you. Set **Stress Test → Log Stats** to print fps, thread timings (game / render / GPU ms) and object counts to the Output Log every 2 seconds.
 Measure with the editor window focused, or turn off **Editor Preferences → Use Less CPU when in Background**,
 otherwise the editor throttles itself to ~3 fps.
 
@@ -73,6 +75,7 @@ otherwise the editor throttles itself to ~3 fps.
 | `CookieCharacter` | First-person movement, input (built in code, no assets), shoot, hold-to-buy |
 | `CookieLaunchable` | A thrown physics object (cookie / oven / grandma placeholder). Freezes into an instance once still |
 | `CookieSettledManager` | Everything at rest, as instanced meshes; settled items keep popping cookies; cookie piles past the cap |
+| `CookieGrandma` | Ragdoll grandma: flies, gets up (a fall animation played backwards), bakes. Frozen into instances when not nearby |
 | `CookieHUD` | Cookie count, crosshair, item hotbar |
 
 ## Working with Claude on the rented machine

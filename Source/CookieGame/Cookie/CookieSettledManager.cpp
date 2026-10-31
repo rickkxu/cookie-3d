@@ -81,6 +81,25 @@ void ACookieSettledManager::AddItem(ECookieItem Item, const FTransform& Transfor
 	ItemInstances[static_cast<int32>(Item)]->AddInstance(Transform, /*bWorldSpace=*/ true);
 }
 
+FTransform ACookieSettledManager::RemoveItemInstance(ECookieItem Item, int32 Index)
+{
+	UInstancedStaticMeshComponent* Instances = ItemInstances[static_cast<int32>(Item)];
+	FTransform Transform;
+	Instances->GetInstanceTransform(Index, Transform, /*bWorldSpace=*/ true);
+	Instances->RemoveInstance(Index);
+	return Transform;
+}
+
+void ACookieSettledManager::SetGrandmaPose(UStaticMesh* Pose)
+{
+	// Grandmas never settle as the placeholder cylinder anymore, so their instance slot takes the baked pose.
+	if (Pose)
+	{
+		ItemInstances[static_cast<int32>(ECookieItem::Grandma)]->SetStaticMesh(Pose);
+		bHasGrandmaPose = true;
+	}
+}
+
 int32 ACookieSettledManager::GetSettledCookieCount() const
 {
 	return CookieInstances ? CookieInstances->GetInstanceCount() : 0;
@@ -200,8 +219,10 @@ void ACookieSettledManager::RefreshDirtyPiles()
 void ACookieSettledManager::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	const double Start = FPlatformTime::Seconds();
 
 	EmitFromSettledItems(DeltaSeconds);
+	const double Emitted = FPlatformTime::Seconds();
 
 	// Resizing a pile rebuilds its collision, so batch growth a few times a second.
 	PileRefreshTimer += DeltaSeconds;
@@ -210,6 +231,17 @@ void ACookieSettledManager::Tick(float DeltaSeconds)
 		PileRefreshTimer = 0.f;
 		RefreshDirtyPiles();
 	}
+
+	EmitMs += (Emitted - Start) * 1000.0;
+	PileMs += (FPlatformTime::Seconds() - Emitted) * 1000.0;
+}
+
+void ACookieSettledManager::ConsumeTimings(double& OutEmitMs, double& OutPileMs)
+{
+	OutEmitMs = EmitMs;
+	OutPileMs = PileMs;
+	EmitMs = 0.0;
+	PileMs = 0.0;
 }
 
 void ACookieSettledManager::EmitFromSettledItems(float DeltaSeconds)
