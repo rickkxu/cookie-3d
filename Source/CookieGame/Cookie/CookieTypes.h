@@ -43,6 +43,10 @@ struct FCookieLaunchSpec
 	UPROPERTY(EditAnywhere, Category = "Launch")
 	float TumbleDegreesPerSecond = 180.f;
 
+	// 0 = engine default (barely bounces), 1 = rubber ball.
+	UPROPERTY(EditAnywhere, Category = "Launch", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float Bounciness = 0.f;
+
 	// Continuous collision detection. Needed for thin, fast things like cookies.
 	UPROPERTY(EditAnywhere, Category = "Launch")
 	bool bUseCCD = false;

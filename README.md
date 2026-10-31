@@ -9,7 +9,8 @@ The full design spec is in [`CLAUDE.md`](CLAUDE.md).
 |---|---|
 | 1. Left-click shoots a cookie in an arc, counter goes up | Code written, **not compiled yet** |
 | 2. Hold right-click rapid-fires grandmas, ramping rate, costs deducted | Code written, **not compiled yet** |
-| 3–8 | Not started |
+| 3. Hotbar (scroll wheel / 1–9), toaster ovens that bounce | Code written, **not compiled yet** |
+| 4–8 | Not started |
 
 This code was written without an Unreal machine available, so expect a few compile fixes on the first build.
 
@@ -46,7 +47,8 @@ The template's own character, weapon, and pickups go unused. `ACookieCharacter` 
 |---|---|
 | WASD + mouse, Space | Move, look, jump |
 | Left-click | Shoot a cookie (+1) |
-| Hold right-click | Rapid-fire buy grandmas (100, ×1.15 each) |
+| Scroll wheel / 1–9 | Select hotbar slot (1 = Toaster Oven, 2 = Grandma) |
+| Hold right-click | Rapid-fire buy the selected item (cost ×1.15 per purchase) |
 
 To test buying quickly, set **Project Settings → Game → Cookie Game → Starting Cookies** to e.g. 10000.
 Every tunable number lives on that settings page (`Cookie/CookieGameSettings.cpp` holds the defaults).
@@ -60,7 +62,7 @@ Every tunable number lives on that settings page (`Cookie/CookieGameSettings.cpp
 | `CookieGameMode` | Cookie bank, owned counts, cost formula |
 | `CookieCharacter` | First-person movement, input (built in code, no assets), shoot, hold-to-buy |
 | `CookieLaunchable` | A thrown physics object (cookie / oven / grandma placeholder) |
-| `CookieHUD` | Cookie count, crosshair, selected item |
+| `CookieHUD` | Cookie count, crosshair, item hotbar |
 
 ## Working with Claude on the rented machine
 

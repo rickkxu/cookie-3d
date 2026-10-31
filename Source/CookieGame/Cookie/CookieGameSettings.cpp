@@ -27,6 +27,7 @@ UCookieGameSettings::UCookieGameSettings()
 	ToasterOven.Launch.Color = FLinearColor(0.6f, 0.6f, 0.65f);
 	ToasterOven.Launch.LaunchSpeed = 900.f;
 	ToasterOven.Launch.SpawnDistance = 110.f;
+	ToasterOven.Launch.Bounciness = 0.45f;
 
 	// Grandma: a tall lavender cylinder standing in for a capsule.
 	Grandma.DisplayName = NSLOCTEXT("CookieGame", "Grandma", "Grandma");

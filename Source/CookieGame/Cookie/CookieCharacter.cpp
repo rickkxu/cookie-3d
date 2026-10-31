@@ -42,6 +42,8 @@ void ACookieCharacter::CreateInputObjects()
 	JumpAction = MakeAction(EInputActionValueType::Boolean);
 	ShootAction = MakeAction(EInputActionValueType::Boolean);
 	BuyAction = MakeAction(EInputActionValueType::Boolean);
+	SelectSlotAction = MakeAction(EInputActionValueType::Axis1D);
+	CycleSlotAction = MakeAction(EInputActionValueType::Axis1D);
 
 	InputMapping = NewObject<UInputMappingContext>(this);
 
@@ -59,6 +61,17 @@ void ACookieCharacter::CreateInputObjects()
 	InputMapping->MapKey(JumpAction, EKeys::SpaceBar);
 	InputMapping->MapKey(ShootAction, EKeys::LeftMouseButton);
 	InputMapping->MapKey(BuyAction, EKeys::RightMouseButton);
+
+	// Number keys share one action; a scalar modifier turns each key's 1.0 into its slot number.
+	const FKey NumberKeys[] = { EKeys::One, EKeys::Two, EKeys::Three, EKeys::Four, EKeys::Five,
+		EKeys::Six, EKeys::Seven, EKeys::Eight, EKeys::Nine };
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(NumberKeys); ++Index)
+	{
+		UInputModifierScalar* SlotNumber = NewObject<UInputModifierScalar>(InputMapping);
+		SlotNumber->Scalar = FVector(Index + 1, 1.0, 1.0);
+		InputMapping->MapKey(SelectSlotAction, NumberKeys[Index]).Modifiers.Add(SlotNumber);
+	}
+	InputMapping->MapKey(CycleSlotAction, EKeys::MouseWheelAxis);
 }
 
 void ACookieCharacter::NotifyControllerChanged()
@@ -95,6 +108,8 @@ void ACookieCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	Input->BindAction(ShootAction, ETriggerEvent::Started, this, &ACookieCharacter::ShootCookie);
 	Input->BindAction(BuyAction, ETriggerEvent::Started, this, &ACookieCharacter::StartBuying);
 	Input->BindAction(BuyAction, ETriggerEvent::Completed, this, &ACookieCharacter::StopBuying);
+	Input->BindAction(SelectSlotAction, ETriggerEvent::Started, this, &ACookieCharacter::SelectSlot);
+	Input->BindAction(CycleSlotAction, ETriggerEvent::Triggered, this, &ACookieCharacter::CycleSlot);
 }
 
 void ACookieCharacter::Move(const FInputActionValue& Value)
@@ -118,6 +133,23 @@ void ACookieCharacter::ShootCookie()
 		GameMode->AddCookies(1.0);
 	}
 	LaunchFromCamera(UCookieGameSettings::Get().Cookie);
+}
+
+void ACookieCharacter::SelectSlot(const FInputActionValue& Value)
+{
+	const int32 Slot = FMath::RoundToInt(Value.Get<float>()) - 1;
+	if (Slot >= 0 && Slot < static_cast<int32>(ECookieItem::Count))
+	{
+		SelectedItem = static_cast<ECookieItem>(Slot);
+	}
+}
+
+void ACookieCharacter::CycleSlot(const FInputActionValue& Value)
+{
+	// Wheel down moves right along the hotbar, wheel up moves left. Wraps at both ends.
+	const int32 Count = static_cast<int32>(ECookieItem::Count);
+	const int32 Step = Value.Get<float>() > 0.f ? -1 : 1;
+	SelectedItem = static_cast<ECookieItem>((static_cast<int32>(SelectedItem) + Step + Count) % Count);
 }
 
 void ACookieCharacter::StartBuying()

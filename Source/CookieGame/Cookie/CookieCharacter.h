@@ -39,6 +39,8 @@ private:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void ShootCookie();
+	void SelectSlot(const FInputActionValue& Value);
+	void CycleSlot(const FInputActionValue& Value);
 	void StartBuying();
 	void StopBuying();
 
@@ -68,8 +70,16 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UInputAction> BuyAction;
 
-	// Hotbar selection arrives in build step 3. Until then right-click always buys grandmas.
-	ECookieItem SelectedItem = ECookieItem::Grandma;
+	// Number keys 1-9. Each key's value is scaled to its slot number (1.0 for key 1, 2.0 for key 2...).
+	UPROPERTY(Transient)
+	TObjectPtr<UInputAction> SelectSlotAction;
+
+	// Mouse wheel, +1 / -1 per notch.
+	UPROPERTY(Transient)
+	TObjectPtr<UInputAction> CycleSlotAction;
+
+	// Hotbar slots are the ECookieItem values in order: slot 1 = first item.
+	ECookieItem SelectedItem = static_cast<ECookieItem>(0);
 
 	bool bBuying = false;
 	float BuyHeldSeconds = 0.f;

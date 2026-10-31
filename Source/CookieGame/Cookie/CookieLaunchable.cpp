@@ -2,6 +2,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 
 ACookieLaunchable::ACookieLaunchable()
 {
@@ -21,6 +22,16 @@ void ACookieLaunchable::Launch(const FCookieLaunchSpec& Spec, const FVector& Vel
 	if (UMaterialInstanceDynamic* Material = Mesh->CreateDynamicMaterialInstance(0))
 	{
 		Material->SetVectorParameterValue(TEXT("Color"), Spec.Color);
+	}
+
+	if (Spec.Bounciness > 0.f)
+	{
+		// Max combine so the item bounces even off floors that have no bounce of their own.
+		UPhysicalMaterial* Bouncy = NewObject<UPhysicalMaterial>(this);
+		Bouncy->Restitution = Spec.Bounciness;
+		Bouncy->bOverrideRestitutionCombineMode = true;
+		Bouncy->RestitutionCombineMode = EFrictionCombineMode::Max;
+		Mesh->SetPhysMaterialOverride(Bouncy);
 	}
 
 	Mesh->SetUseCCD(Spec.bUseCCD);
