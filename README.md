@@ -14,7 +14,7 @@ The full design spec is in [`CLAUDE.md`](CLAUDE.md).
 | 5. Freeze-when-settled, instancing, cookie piles, stress test | Done |
 | 6. Grandmas ragdoll on landing, get up, bake; only nearby ones animate | Done, playtested (Quinn mannequin stand-in) |
 | 7. House: kitchen, living room, hallway, bedroom, bathroom, front door, fenced yard | Done, playtested (placeholder blocks, no roof yet) |
-| 8 | Not started |
+| 8. Stylized models and sounds | In progress: cookie, toaster oven and house done (Low Poly Interior kit); grandma model needs retargeting; sounds not started |
 
 Performance (standalone `-game`, 1280×720, Tesla T4, house with 25 ovens + 40 grandmas producing): **~76 fps**
 with the rendering settings below, versus ~18 fps with the template's defaults. The defaults (Lumen,
@@ -57,6 +57,10 @@ then run [`scripts/setup-windows.ps1`](scripts/setup-windows.ps1) on it.
    - `Content/__ExternalActors__/Cookie/` and `Content/__ExternalObjects__/Cookie/` → the same paths in
      `<Project>/Content/` (the house level's actors; World Partition stores each one as its own file)
    - `CLAUDE.md`, `README.md`, `docs/`, `scripts/`, `.gitignore` → `<Project>/`
+   - **Purchased art, not in this repo** (licensed Fab assets; add them with Fab → **Add to Project**):
+     the **Low Poly Interior** kit (`Content/LowPolyInterior/`: house pieces, furniture, cookie, toaster) and the
+     **Grandma 3D Character – Stylized Cartoon Elder Woman** (`Content/Fab/...`). In the kit, open
+     `Materials/M_LowPolyInterior_01` and tick **Used with Instanced Static Meshes**, then save.
 5. Open `<Project>/Source/CookieGame/CookieGame.Build.cs` and add `"DeveloperSettings"`, `"PhysicsCore"`,
    `"MeshDescription"`, `"StaticMeshDescription"`, `"RenderCore"` and `"RHI"` to `PublicDependencyModuleNames`,
    and `"CookieGame/Cookie"` to `PublicIncludePaths`. `"EnhancedInput"` should already be listed; add it if it isn't.
@@ -69,9 +73,10 @@ then run [`scripts/setup-windows.ps1`](scripts/setup-windows.ps1) on it.
   and **Game Default Map** = `/Game/Cookie/Lvl_House`.
 - Open `Lvl_House` (its World Settings already use `CookieGameMode`) and press **Play**.
 
-The house was built from engine cube blocks through the editor (folders `House/Walls`, `House/Floors`,
-`House/Furniture`, `Yard` in the Outliner), colored with the `Content/Cookie/House/MI_House_*` materials.
-Move or resize any block in the editor; step 8 swaps them for stylized models.
+The house is built from the Low Poly Interior kit's modular pieces on its 2.5 m grid (Outliner folders
+`House/Walls`, `House/Floors`, `House/Furniture`): a 7 × 5 tile house, white walls with window and doorway
+pieces, kit furniture in every room. The yard (`Yard` folder: grass, path, fence) is still flat-colored blocks
+using `Content/Cookie/House/MI_House_*`.
 
 The template's own character, weapon, and pickups go unused. `ACookieCharacter` replaces them.
 
