@@ -21,7 +21,7 @@
 
 namespace
 {
-	constexpr float SettleCheckSeconds = 0.1f;
+	constexpr float GrandmaSettleCheckSeconds = 0.1f;
 
 	// UE5 mannequin bones.
 	const FName Pelvis(TEXT("pelvis"));
@@ -192,7 +192,7 @@ void ACookieGrandma::Launch(const FVector& Velocity)
 	Body->SetAllPhysicsLinearVelocity(Velocity);
 	Body->SetPhysicsAngularVelocityInDegrees(FMath::VRand() * UCookieGameSettings::Get().Grandma.Launch.TumbleDegreesPerSecond, false, Pelvis);
 
-	GetWorldTimerManager().SetTimer(SettleTimer, this, &ACookieGrandma::CheckSettled, SettleCheckSeconds, true);
+	GetWorldTimerManager().SetTimer(SettleTimer, this, &ACookieGrandma::CheckSettled, GrandmaSettleCheckSeconds, true);
 	StartEmitting();
 }
 
@@ -206,10 +206,10 @@ void ACookieGrandma::CheckSettled()
 {
 	// Same rule as other thrown things (see ACookieLaunchable::CheckSettled), judged by her pelvis.
 	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
-	FlyingSeconds += SettleCheckSeconds;
+	FlyingSeconds += GrandmaSettleCheckSeconds;
 	const float Tolerance = FlyingSeconds >= Settings.MaxFlyingSeconds ? 10.f : 1.f;
 	const bool bStill = Body->GetPhysicsLinearVelocity(Pelvis).Size() < Settings.SettleSpeed * Tolerance;
-	StillSeconds = bStill ? StillSeconds + SettleCheckSeconds : 0.f;
+	StillSeconds = bStill ? StillSeconds + GrandmaSettleCheckSeconds : 0.f;
 	if (StillSeconds >= Settings.SettleSeconds)
 	{
 		GetWorldTimerManager().ClearTimer(SettleTimer);

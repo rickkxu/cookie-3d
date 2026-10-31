@@ -16,9 +16,29 @@ The full design spec is in [`CLAUDE.md`](CLAUDE.md).
 | 7. House: kitchen, living room, hallway, bedroom, bathroom, front door, fenced yard | Done, playtested (placeholder blocks, no roof yet) |
 | 8 | Not started |
 
-Performance (UE 5.8 editor PIE on a Tesla T4, template level): empty scene ~48 fps; 30 ovens + 60 grandmas
-producing ~20 fps. The GPU sits at 99% and the render thread is the limit, not game code (<1 ms/frame).
-Lowering engine scalability (Lumen, virtual shadow maps) is the likely fix and hasn't been tried yet.
+Performance (standalone `-game`, 1280×720, Tesla T4, house with 25 ovens + 40 grandmas producing): **~76 fps**
+with the rendering settings below, versus ~18 fps with the template's defaults. The defaults (Lumen,
+virtual shadow maps, hardware ray tracing) overloaded the render thread, mostly because ray tracing rebuilds
+every animated grandma's geometry each frame. Game code costs under 1 ms per frame.
+
+### Rendering settings (in `Config/DefaultEngine.ini`, which isn't in this repo)
+
+```ini
+[/Script/Engine.RendererSettings]
+r.DynamicGlobalIlluminationMethod=0   ; was 1 (Lumen)
+r.ReflectionMethod=2                  ; was 1 (Lumen) - screen space reflections
+r.Shadow.Virtual.Enable=0             ; was 1 - regular cascaded shadow maps
+
+[SystemSettings]
+r.RayTracing.Enable=0                 ; ray tracing shaders stay compiled (r.RayTracing=True), just switched off
+```
+
+Without global illumination, `Lvl_House` fakes the bounce light: a warm sky light with a warm lower hemisphere,
+the sun letting 25% of its light through shadows (Shadow Amount 0.75), and a weak shadowless `FillLight`
+from the opposite side. On a faster GPU, flip these back to try Lumen.
+
+To benchmark: run the game standalone (`UnrealEditor.exe CookieGame.uproject /Game/Cookie/Lvl_House -game`)
+with **Log Stats** on. The editor's own Play mode caps itself at 3 fps whenever its window isn't in front.
 
 ## 1. Rent a machine
 
