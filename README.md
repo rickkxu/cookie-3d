@@ -29,7 +29,7 @@ that are drawn entirely from cookie instances (irregular shapes, two layers, lea
 
 ```ini
 [/Script/Engine.RendererSettings]
-r.DynamicGlobalIlluminationMethod=0   ; was 1 (Lumen)
+r.DynamicGlobalIlluminationMethod=2   ; was 1 (Lumen) - screen-space GI, nearly free
 r.ReflectionMethod=2                  ; was 1 (Lumen) - screen space reflections
 r.Shadow.Virtual.Enable=0             ; was 1 - regular cascaded shadow maps
 
@@ -37,9 +37,18 @@ r.Shadow.Virtual.Enable=0             ; was 1 - regular cascaded shadow maps
 r.RayTracing.Enable=0                 ; ray tracing shaders stay compiled (r.RayTracing=True), just switched off
 ```
 
-Without global illumination, `Lvl_House` fakes the bounce light: a warm sky light with a warm lower hemisphere,
-the sun letting 25% of its light through shadows (Shadow Amount 0.75), and a weak shadowless `FillLight`
-from the opposite side. On a faster GPU, flip these back to try Lumen.
+Without Lumen, `Lvl_House` builds its mood from cheap lights: a warm sky light with a warm lower hemisphere,
+the sun letting 25% of its light through shadows (Shadow Amount 0.75), a weak shadowless `FillLight` from the
+opposite side, and inside, warm shadowless point lights at the lamps in every room (`House/Lights`), each with
+a small radius so it stays roughly in its room. An unbound `PostProcess_Look` volume adds contact shadows
+(ambient occlusion), a slightly warm white balance and a soft vignette.
+
+Measured with the roof on (20 grandmas + 25 toasters): current setup ~56 fps; Lumen ~37 fps (~43 at reduced
+quality). On a faster GPU, set `r.DynamicGlobalIlluminationMethod=1` and `r.ReflectionMethod=1` to try Lumen,
+and dim the point lights, since Lumen adds bounce light on top.
+
+Careful: changing Global Illumination or Reflections under Project Settings → Rendering in the editor writes
+straight to `Config/DefaultEngine.ini`.
 
 To benchmark: run the game standalone (`UnrealEditor.exe CookieGame.uproject /Game/Cookie/Lvl_House -game`)
 with **Log Stats** on. The editor's own Play mode caps itself at 3 fps whenever its window isn't in front.
