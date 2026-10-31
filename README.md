@@ -13,7 +13,8 @@ The full design spec is in [`CLAUDE.md`](CLAUDE.md).
 | 4. Helpers produce cookies over time and pop out physical cookies | Done |
 | 5. Freeze-when-settled, instancing, cookie piles, stress test | Done |
 | 6. Grandmas ragdoll on landing, get up, bake; only nearby ones animate | Done (Quinn mannequin stand-in) |
-| 7–8 | Not started |
+| 7. House: kitchen, living room, hallway, bedroom, bathroom, front door, fenced yard | Done (placeholder blocks, no roof yet) |
+| 8 | Not started |
 
 Performance (UE 5.8 editor PIE on a Tesla T4, template level): empty scene ~48 fps; 30 ovens + 60 grandmas
 producing ~20 fps. The GPU sits at 99% and the render thread is the limit, not game code (<1 ms/frame).
@@ -32,7 +33,9 @@ then run [`scripts/setup-windows.ps1`](scripts/setup-windows.ps1) on it.
 3. Close the editor once it opens.
 4. Copy these files from this repo into the new project folder:
    - `Source/CookieGame/Cookie/` → `<Project>/Source/CookieGame/Cookie/`
-   - `Content/Cookie/` → `<Project>/Content/Cookie/` (the placeholder color material)
+   - `Content/Cookie/` → `<Project>/Content/Cookie/` (placeholder materials and the house level, `Lvl_House`)
+   - `Content/__ExternalActors__/Cookie/` and `Content/__ExternalObjects__/Cookie/` → the same paths in
+     `<Project>/Content/` (the house level's actors; World Partition stores each one as its own file)
    - `CLAUDE.md`, `README.md`, `docs/`, `scripts/`, `.gitignore` → `<Project>/`
 5. Open `<Project>/Source/CookieGame/CookieGame.Build.cs` and add `"DeveloperSettings"`, `"PhysicsCore"`,
    `"MeshDescription"`, `"StaticMeshDescription"`, `"RenderCore"` and `"RHI"` to `PublicDependencyModuleNames`,
@@ -40,11 +43,15 @@ then run [`scripts/setup-windows.ps1`](scripts/setup-windows.ps1) on it.
 6. Right-click `CookieGame.uproject` → **Generate Visual Studio project files**, then double-click
    `CookieGame.uproject` and let it rebuild.
 
-## 3. Use the Cookie game mode
+## 3. Open the house and play
 
-- **Project Settings → Maps & Modes → Default GameMode** = `CookieGameMode`.
-- Open the template level, then **World Settings → GameMode Override** = `CookieGameMode` (or None).
-- Press **Play**.
+- **Project Settings → Maps & Modes**: **Default GameMode** = `CookieGameMode`, and both **Editor Startup Map**
+  and **Game Default Map** = `/Game/Cookie/Lvl_House`.
+- Open `Lvl_House` (its World Settings already use `CookieGameMode`) and press **Play**.
+
+The house was built from engine cube blocks through the editor (folders `House/Walls`, `House/Floors`,
+`House/Furniture`, `Yard` in the Outliner), colored with the `Content/Cookie/House/MI_House_*` materials.
+Move or resize any block in the editor; step 8 swaps them for stylized models.
 
 The template's own character, weapon, and pickups go unused. `ACookieCharacter` replaces them.
 
