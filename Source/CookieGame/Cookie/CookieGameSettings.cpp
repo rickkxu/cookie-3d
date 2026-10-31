@@ -25,6 +25,8 @@ UCookieGameSettings::UCookieGameSettings()
 	Cookie.SpawnDistance = 60.f;
 	Cookie.TumbleDegreesPerSecond = 360.f;
 	Cookie.bUseCCD = true;
+	Cookie.Friction = 0.9f;
+	Cookie.AngularDamping = 0.3f;
 
 	// Toaster oven: the kit's toaster, scaled up to a chunky 50 cm.
 	ToasterOven.DisplayName = NSLOCTEXT("CookieGame", "ToasterOven", "Toaster Oven");

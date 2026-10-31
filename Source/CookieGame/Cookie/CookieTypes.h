@@ -52,6 +52,14 @@ struct FCookieLaunchSpec
 	UPROPERTY(EditAnywhere, Category = "Launch", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float Bounciness = 0.f;
 
+	// 0 = engine default. Higher makes things grip each other and heap up instead of sliding apart.
+	UPROPERTY(EditAnywhere, Category = "Launch", meta = (ClampMin = "0.0"))
+	float Friction = 0.f;
+
+	// Slows spinning and rolling, so discs don't roll away on their edge.
+	UPROPERTY(EditAnywhere, Category = "Launch", meta = (ClampMin = "0.0"))
+	float AngularDamping = 0.f;
+
 	// Continuous collision detection. Needed for thin, fast things like cookies.
 	UPROPERTY(EditAnywhere, Category = "Launch")
 	bool bUseCCD = false;

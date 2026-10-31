@@ -17,6 +17,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "TimerManager.h"
 
@@ -108,9 +109,27 @@ namespace
 			: Body->GetSkinnedAsset()->GetMaterials()[0].MaterialInterface.Get();
 		Mesh->GetStaticMaterials().Add(FStaticMaterial(Material, TEXT("Body")));
 		UStaticMesh::FBuildMeshDescriptionsParams Params;
-		Params.bBuildSimpleCollision = true;
+		Params.bBuildSimpleCollision = false;
 		Params.bFastBuild = true;
 		Mesh->BuildFromMeshDescriptions({ &Description }, Params);
+
+		// Collide as a capsule fitted to her body. A box around the pose is far bigger than she is (cookies
+		// would rest on its invisible corners around her head); her exact triangles are too slow to collide with.
+		FBox Box(ForceInit);
+		for (const FVector3f& Position : Positions)
+		{
+			Box += FVector(Position);
+		}
+		FKSphylElem Capsule;
+		Capsule.Center = Box.GetCenter();
+		Capsule.Radius = 0.2f * static_cast<float>(Box.GetSize().X + Box.GetSize().Y);
+		Capsule.Length = FMath::Max(0.f, static_cast<float>(Box.GetSize().Z) - 2.f * Capsule.Radius);
+		Mesh->CreateBodySetup();
+		UBodySetup* Collision = Mesh->GetBodySetup();
+		Collision->AggGeom.SphylElems.Add(Capsule);
+		Collision->CollisionTraceFlag = CTF_UseSimpleAsComplex;
+		Collision->InvalidatePhysicsData();
+		Collision->CreatePhysicsMeshes();
 		return Mesh;
 	}
 }

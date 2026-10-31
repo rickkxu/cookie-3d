@@ -115,12 +115,12 @@ public:
 
 	// Past this many individual cookies (flying + settled), new cookies grow pile meshes instead.
 	UPROPERTY(Config, EditAnywhere, Category = "Production", meta = (ClampMin = "0"))
-	int32 MaxPhysicalCookies = 500;
+	int32 MaxPhysicalCookies = 10000;
 
 	// Produced cookies only fly while fewer than this many cookies are in the air; the rest go straight onto piles.
 	// Keeps a big bakery from flooding the physics engine. The player's own shots always fly.
 	UPROPERTY(Config, EditAnywhere, Category = "Production", meta = (ClampMin = "0"))
-	int32 MaxFlyingCookies = 40;
+	int32 MaxFlyingCookies = 150;
 
 	// Cookies landing within this distance (cm) of an existing pile join it instead of starting a new one.
 	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "1.0"))
@@ -144,11 +144,7 @@ public:
 
 	// How messily surface cookies lie: 0 = flat against the slope.
 	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float PileSurfaceJitter = 0.22f;
-
-	// Color of the core under the surface cookies, relative to the cookie color.
-	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float PileCoreBrightness = 0.8f;
+	float PileSurfaceJitter = 0.3f;
 
 	// Growing piles are resized at most this often (resizing rebuilds collision).
 	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "0.0"))

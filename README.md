@@ -21,6 +21,10 @@ with the rendering settings below, versus ~18 fps with the template's defaults. 
 virtual shadow maps, hardware ray tracing) overloaded the render thread, mostly because ray tracing rebuilds
 every animated grandma's geometry each frame. Game code costs under 1 ms per frame.
 
+Cookies stay fully physical up to 10,000 (the spec's starting point was 500; raised for realism): 5,000 real
+cookies in the house run at ~55 fps, losing about 3 fps per extra 1,000. Past the limit, new cookies join heaps
+that are drawn entirely from cookie instances (irregular shapes, two layers, leaning and upside-down cookies).
+
 ### Rendering settings (in `Config/DefaultEngine.ini`, which isn't in this repo)
 
 ```ini

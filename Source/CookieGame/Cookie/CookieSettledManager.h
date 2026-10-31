@@ -70,11 +70,20 @@ private:
 	double GetPileRadius(const FPile& Pile) const;
 	FTransform GetPileCoreTransform(const FPile& Pile) const;
 
+	// Heap height as a fraction of its radius: flat for a handful of cookies, 0.5 for a real heap.
+	static double HeightRatioFor(double Radius);
+
 	// Lays out the cookies covering pile Index at its current size.
 	void BuildPileSurface(int32 Index);
 
+	// Settled cookies, CookiesPerChunk to a component.
 	UPROPERTY(Transient)
-	TObjectPtr<UInstancedStaticMeshComponent> CookieInstances;
+	TArray<TObjectPtr<UInstancedStaticMeshComponent>> CookieChunks;
+	int32 SettledCookieCount = 0;
+	static constexpr int32 CookiesPerChunk = 500;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> CookieMesh;
 
 	// Indexed by ECookieItem.
 	UPROPERTY(Transient)

@@ -119,16 +119,27 @@ void ACookieLaunchable::Launch(const FCookieLaunchSpec& Spec, const FVector& Vel
 		}
 	}
 
-	if (Spec.Bounciness > 0.f)
+	if (Spec.Bounciness > 0.f || Spec.Friction > 0.f)
 	{
-		// Max combine so the item bounces even off floors that have no bounce of their own.
-		UPhysicalMaterial* Bouncy = NewObject<UPhysicalMaterial>(this);
-		Bouncy->Restitution = Spec.Bounciness;
-		Bouncy->bOverrideRestitutionCombineMode = true;
-		Bouncy->RestitutionCombineMode = EFrictionCombineMode::Max;
-		Mesh->SetPhysMaterialOverride(Bouncy);
+		// Max combine so the item bounces (or grips) even against floors that don't.
+		UPhysicalMaterial* Surface = NewObject<UPhysicalMaterial>(this);
+		if (Spec.Bounciness > 0.f)
+		{
+			Surface->Restitution = Spec.Bounciness;
+			Surface->bOverrideRestitutionCombineMode = true;
+			Surface->RestitutionCombineMode = EFrictionCombineMode::Max;
+		}
+		if (Spec.Friction > 0.f)
+		{
+			Surface->Friction = Spec.Friction;
+			Surface->StaticFriction = Spec.Friction;
+			Surface->bOverrideFrictionCombineMode = true;
+			Surface->FrictionCombineMode = EFrictionCombineMode::Max;
+		}
+		Mesh->SetPhysMaterialOverride(Surface);
 	}
 
+	Mesh->SetAngularDamping(Spec.AngularDamping);
 	Mesh->SetUseCCD(Spec.bUseCCD);
 	Mesh->SetSimulatePhysics(true);
 	Mesh->SetPhysicsLinearVelocity(Velocity);
