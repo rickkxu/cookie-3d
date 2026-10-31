@@ -42,13 +42,18 @@ private:
 	{
 		FVector Ground;
 		int32 Count = 0;
+		int32 SurfaceCookies = 0;
 		bool bDirty = false;
 	};
 
 	UInstancedStaticMeshComponent* MakeInstances(const TCHAR* Name, const FCookieLaunchSpec& Spec);
 	void EmitFromSettledItems(float DeltaSeconds);
 	void RefreshDirtyPiles();
+	double GetPileRadius(const FPile& Pile) const;
 	FTransform GetPileTransform(const FPile& Pile) const;
+
+	// Adds cookies lying on the pile's surface until it is covered at its current size.
+	void CoverPileSurface(FPile& Pile);
 
 	UPROPERTY(Transient)
 	TObjectPtr<UInstancedStaticMeshComponent> CookieInstances;
@@ -59,6 +64,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UInstancedStaticMeshComponent> PileInstances;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UInstancedStaticMeshComponent> PileSurfaceInstances;
 
 	// Pile i is instance i of PileInstances.
 	TArray<FPile> Piles;

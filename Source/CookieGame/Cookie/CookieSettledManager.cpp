@@ -37,10 +37,16 @@ void ACookieSettledManager::BeginPlay()
 		EmitAccumulators.Add(0.f);
 	}
 
+	// Pile core: a darker mound, so gaps between the surface cookies read as shadowed cookies further in.
 	FCookieLaunchSpec PileSpec = Settings.Cookie;
 	PileSpec.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(SpherePath));
+	PileSpec.Color = Settings.Cookie.Color * Settings.PileCoreBrightness;
 	PileInstances = MakeInstances(TEXT("CookiePiles"), PileSpec);
 	PileInstances->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
+	// Cookies lying on the pile's surface. Decoration only: the core handles collision.
+	PileSurfaceInstances = MakeInstances(TEXT("CookiePileSurface"), Settings.Cookie);
+	PileSurfaceInstances->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 UInstancedStaticMeshComponent* ACookieSettledManager::MakeInstances(const TCHAR* Name, const FCookieLaunchSpec& Spec)
@@ -122,25 +128,71 @@ void ACookieSettledManager::AddToPileNear(const FVector& Location)
 	Pile.Ground = bHit ? Hit.ImpactPoint : Location;
 	Pile.Count = 1;
 	PileInstances->AddInstance(GetPileTransform(Pile), /*bWorldSpace=*/ true);
+	CoverPileSurface(Pile);
+}
+
+double ACookieSettledManager::GetPileRadius(const FPile& Pile) const
+{
+	// The mound above ground is a half-spheroid half as tall as it is wide: volume = pi * r^3 / 3.
+	const double Volume = Pile.Count * static_cast<double>(UCookieGameSettings::Get().PileCookieVolume);
+	return FMath::Pow(3.0 * Volume / UE_DOUBLE_PI, 1.0 / 3.0);
 }
 
 FTransform ACookieSettledManager::GetPileTransform(const FPile& Pile) const
 {
-	// The mound above ground is a half-spheroid half as tall as it is wide: volume = pi * r^3 / 3.
-	const double Volume = Pile.Count * static_cast<double>(UCookieGameSettings::Get().PileCookieVolume);
-	const double Radius = FMath::Pow(3.0 * Volume / UE_DOUBLE_PI, 1.0 / 3.0);
-	const double Scale = Radius / SphereRadius;
+	const double Scale = GetPileRadius(Pile) / SphereRadius;
 	return FTransform(FQuat::Identity, Pile.Ground, FVector(Scale, Scale, Scale * 0.5));
+}
+
+void ACookieSettledManager::CoverPileSurface(FPile& Pile)
+{
+	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
+	const double Radius = GetPileRadius(Pile);
+	const double Height = Radius * 0.5;
+
+	// A half-spheroid this flat has about 1.38 * pi * r^2 of surface; a cookie covers pi * c^2.
+	const FVector CookieExtent = CookieInstances->GetStaticMesh()->GetBounds().BoxExtent * Settings.Cookie.Scale;
+	const double CookieRadius = CookieExtent.X;
+	const int32 Wanted = FMath::CeilToInt32(Settings.PileSurfaceCoverage * 1.38 * FMath::Square(Radius / CookieRadius));
+	if (Wanted <= Pile.SurfaceCookies)
+	{
+		return;
+	}
+
+	// Add only the new ones. Cookies placed while the pile was smaller end up buried inside the core.
+	TArray<FTransform> NewCookies;
+	NewCookies.Reserve(Wanted - Pile.SurfaceCookies);
+	for (int32 Index = Pile.SurfaceCookies; Index < Wanted; ++Index)
+	{
+		// Random point on the upper half of the spheroid. Uniform height gives roughly even coverage.
+		const double Yaw = FMath::FRandRange(0.0, UE_DOUBLE_TWO_PI);
+		const double Up = FMath::FRand();
+		const double Out = FMath::Sqrt(1.0 - Up * Up);
+		const FVector Offset(Radius * Out * FMath::Cos(Yaw), Radius * Out * FMath::Sin(Yaw), Height * Up);
+
+		// Lie flat against the slope (the spheroid's surface normal), tilted a little at random.
+		const FVector Normal = FVector(Offset.X / (Radius * Radius), Offset.Y / (Radius * Radius), Offset.Z / (Height * Height)).GetSafeNormal();
+		const FVector Tilted = (Normal + FMath::VRand() * Settings.PileSurfaceJitter).GetSafeNormal();
+		const FRotator Rotation = FRotationMatrix::MakeFromZX(Tilted, FMath::VRand()).Rotator();
+
+		// Rest on the surface rather than sinking halfway in, some a little proud of it for a lumpier outline.
+		const double Lift = CookieExtent.Z + FMath::FRand() * CookieRadius * 0.4;
+		NewCookies.Emplace(Rotation, Pile.Ground + Offset + Normal * Lift, Settings.Cookie.Scale);
+	}
+	PileSurfaceInstances->AddInstances(NewCookies, /*bShouldReturnIndices=*/ false, /*bWorldSpace=*/ true);
+	Pile.SurfaceCookies = Wanted;
 }
 
 void ACookieSettledManager::RefreshDirtyPiles()
 {
 	for (int32 Index = 0; Index < Piles.Num(); ++Index)
 	{
-		if (Piles[Index].bDirty)
+		FPile& Pile = Piles[Index];
+		if (Pile.bDirty)
 		{
-			Piles[Index].bDirty = false;
-			PileInstances->UpdateInstanceTransform(Index, GetPileTransform(Piles[Index]), /*bWorldSpace=*/ true, /*bMarkRenderStateDirty=*/ true);
+			Pile.bDirty = false;
+			PileInstances->UpdateInstanceTransform(Index, GetPileTransform(Pile), /*bWorldSpace=*/ true, /*bMarkRenderStateDirty=*/ true);
+			CoverPileSurface(Pile);
 		}
 	}
 }

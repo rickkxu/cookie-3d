@@ -77,6 +77,18 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "1.0"))
 	float PileCookieVolume = 4000.f;
 
+	// How thickly cookies cover a pile's surface. 1 = their total area matches the mound's; more overlaps them.
+	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "0.0"))
+	float PileSurfaceCoverage = 3.f;
+
+	// How messily surface cookies lie: 0 = flat against the slope.
+	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float PileSurfaceJitter = 0.35f;
+
+	// Color of the mound under the surface cookies, relative to the cookie color.
+	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float PileCoreBrightness = 0.6f;
+
 	// Growing piles are resized at most this often (resizing rebuilds collision).
 	UPROPERTY(Config, EditAnywhere, Category = "Piles", meta = (ClampMin = "0.0"))
 	float PileRefreshSeconds = 0.25f;
