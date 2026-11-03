@@ -16,3 +16,7 @@ Build/
 Content/LowPolyInterior/
 Content/Fab/
 Content/Cookie/Grandma/Model/
+
+# Generated solutions and local backups
+*.slnx
+*.bak-demo
