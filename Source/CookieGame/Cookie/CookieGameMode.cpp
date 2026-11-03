@@ -205,9 +205,16 @@ void ACookieGameMode::LogStats(float DeltaSeconds)
 		Settled->ConsumeTimings(EmitMs, PileMs);
 	}
 
+	FString PlayerLocation = TEXT("-");
+	if (const APawn* Player = GetWorld()->GetFirstPlayerController() ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr)
+	{
+		const FVector L = Player->GetActorLocation();
+		PlayerLocation = FString::Printf(TEXT("(%.0f, %.0f, %.0f)"), L.X, L.Y, L.Z);
+	}
+
 	// The same thread timings "stat unit" shows: whichever is largest is what limits the frame rate.
 	UE_LOG(LogTemp, Display,
-		TEXT("Cookie stats: %.0f fps (game %.1f ms, render %.1f ms, gpu %.1f ms; emit %.2f, piles %.2f ms/frame) | flying %d (cookies %d) | settled cookies %d, ovens %d | grandmas %d live (baking %d, animating %d), %d frozen | piles %d holding %lld (largest %lld, %d surface cookies) | ghosts %d | bank %.0f"),
+		TEXT("Cookie stats: %.0f fps (game %.1f ms, render %.1f ms, gpu %.1f ms; emit %.2f, piles %.2f ms/frame) | flying %d (cookies %d) | settled cookies %d, ovens %d | grandmas %d live (baking %d, animating %d), %d frozen | piles %d holding %lld (largest %lld, %d surface cookies) | ghosts %d | bank %.0f | producers %d trees, %d bakeries, %d factories (%d in the air) | player at %s"),
 		StatsFrames / StatsSeconds,
 		FPlatformTime::ToMilliseconds(GGameThreadTime), FPlatformTime::ToMilliseconds(GRenderThreadTime),
 		FPlatformTime::ToMilliseconds(RHIGetGPUFrameCycles()),
@@ -222,7 +229,12 @@ void ACookieGameMode::LogStats(float DeltaSeconds)
 		Settled ? Settled->GetLargestPileCount() : int64(0),
 		Settled ? Settled->GetPileSurfaceInstanceCount() : 0,
 		Settled ? Settled->GetGhostCookieCount() : 0,
-		Cookies);
+		Cookies,
+		Settled ? Settled->GetSettledItemCount(ECookieItem::CookieTree) : 0,
+		Settled ? Settled->GetSettledItemCount(ECookieItem::Bakery) : 0,
+		Settled ? Settled->GetSettledItemCount(ECookieItem::Factory) : 0,
+		FlyingThings - FlyingCookies,
+		*PlayerLocation);
 
 	StatsSeconds = 0.f;
 	StatsFrames = 0;

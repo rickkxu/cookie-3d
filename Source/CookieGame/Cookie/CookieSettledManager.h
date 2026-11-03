@@ -235,6 +235,8 @@ private:
 	int64 RemovalDebt = 0;
 
 	float PileRefreshTimer = 0.f;
+	// Cookies laid out immediately (outside the time-sliced builds) this frame.
+	int32 ImmediateCookiesThisFrame = 0;
 	bool bHasGrandmaPose = false;
 
 	// Cookie size, cached from the mesh.

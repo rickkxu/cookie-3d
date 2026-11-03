@@ -7,62 +7,62 @@
 
 namespace
 {
-	UStaticMesh* LoadMesh(const TCHAR* Path)
+	UStaticMesh* NbLoadMesh(const TCHAR* Path)
 	{
 		return LoadObject<UStaticMesh>(nullptr, Path);
 	}
 
-	UMaterialInterface* LoadMaterial(const TCHAR* Path)
+	UMaterialInterface* NbLoadMaterial(const TCHAR* Path)
 	{
 		return LoadObject<UMaterialInterface>(nullptr, Path);
 	}
 
-	const TCHAR* CubePath = TEXT("/Engine/BasicShapes/Cube.Cube");
-	const TCHAR* CylinderPath = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
-	const TCHAR* RampPath = TEXT("/Game/LevelPrototyping/Meshes/SM_Ramp.SM_Ramp");
-	const TCHAR* WallPlainPath = TEXT("/Game/LowPolyInterior/Meshes/Walls/Mesh_Walls_WallFloor2_01.Mesh_Walls_WallFloor2_01");
-	const TCHAR* WallWindowPath = TEXT("/Game/LowPolyInterior/Meshes/Walls/Mesh_Walls_WallFloor2_02.Mesh_Walls_WallFloor2_02");
-	const TCHAR* WallDoorPath = TEXT("/Game/LowPolyInterior/Meshes/Walls/Mesh_Walls_WallFloor2_04.Mesh_Walls_WallFloor2_04");
-	const TCHAR* DoorPath = TEXT("/Game/LowPolyInterior/Meshes/Walls/Mesh_Walls_Door_01.Mesh_Walls_Door_01");
-	const TCHAR* FlowerPath = TEXT("/Game/LowPolyInterior/Meshes/Flowers/Mesh_Flower_06.Mesh_Flower_06");
-	const TCHAR* FencePath = TEXT("/Game/Cookie/House/Merged/SM_SM_Fence.SM_SM_Fence");
-	const TCHAR* TreeRoundPath = TEXT("/Game/Cookie/Foliage/SM_Tree_Round.SM_Tree_Round");
-	const TCHAR* TreePinePath = TEXT("/Game/Cookie/Foliage/SM_Tree_Pine.SM_Tree_Pine");
-	const TCHAR* ClumpPaths[] = {
+	const TCHAR* NbCubePath = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* NbCylinderPath = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
+	const TCHAR* NbRampPath = TEXT("/Game/LevelPrototyping/Meshes/SM_Ramp.SM_Ramp");
+	const TCHAR* NbWallPlainPath = TEXT("/Game/LowPolyInterior/Meshes/Walls/Mesh_Walls_WallFloor2_01.Mesh_Walls_WallFloor2_01");
+	const TCHAR* NbWallWindowPath = TEXT("/Game/LowPolyInterior/Meshes/Walls/Mesh_Walls_WallFloor2_02.Mesh_Walls_WallFloor2_02");
+	const TCHAR* NbWallDoorPath = TEXT("/Game/LowPolyInterior/Meshes/Walls/Mesh_Walls_WallFloor2_04.Mesh_Walls_WallFloor2_04");
+	const TCHAR* NbDoorPath = TEXT("/Game/LowPolyInterior/Meshes/Walls/Mesh_Walls_Door_01.Mesh_Walls_Door_01");
+	const TCHAR* NbFlowerPath = TEXT("/Game/LowPolyInterior/Meshes/Flowers/Mesh_Flower_06.Mesh_Flower_06");
+	const TCHAR* NbFencePath = TEXT("/Game/Cookie/House/Merged/SM_SM_Fence.SM_SM_Fence");
+	const TCHAR* NbTreeRoundPath = TEXT("/Game/Cookie/Foliage/SM_Tree_Round.SM_Tree_Round");
+	const TCHAR* NbTreePinePath = TEXT("/Game/Cookie/Foliage/SM_Tree_Pine.SM_Tree_Pine");
+	const TCHAR* NbClumpPaths[] = {
 		TEXT("/Game/Cookie/Foliage/SM_Clump_A.SM_Clump_A"),
 		TEXT("/Game/Cookie/Foliage/SM_Clump_B.SM_Clump_B"),
 		TEXT("/Game/Cookie/Foliage/SM_Clump_C.SM_Clump_C") };
-	const TCHAR* GrassPath = TEXT("/Game/Cookie/House/M_Grass.M_Grass");
-	const TCHAR* PlaceholderPath = TEXT("/Game/Cookie/M_CookiePlaceholder.M_CookiePlaceholder");
-	const TCHAR* TwoToneWallPath = TEXT("/Game/Cookie/House/Walls/MI_Wall_Living_Ext.MI_Wall_Living_Ext");
+	const TCHAR* NbGrassPath = TEXT("/Game/Cookie/House/M_Grass.M_Grass");
+	const TCHAR* NbPlaceholderPath = TEXT("/Game/Cookie/M_CookiePlaceholder.M_CookiePlaceholder");
+	const TCHAR* NbTwoToneWallPath = TEXT("/Game/Cookie/House/Walls/MI_Wall_Living_Ext.MI_Wall_Living_Ext");
 
 	// The player's house's palette, for matching trims and props.
-	const FLinearColor White(0.93f, 0.93f, 0.9f);
-	const FLinearColor Stone(0.32f, 0.3f, 0.27f);
-	const FLinearColor PathGrey(0.5f, 0.48f, 0.45f);
-	const FLinearColor DarkWood(0.25f, 0.14f, 0.07f);
-	const FLinearColor Brick(0.42f, 0.13f, 0.07f);
-	const FLinearColor Leaves(0.1f, 0.32f, 0.06f);
-	const FLinearColor LeavesLight(0.2f, 0.42f, 0.08f);
-	const FLinearColor Interior(0.1f, 0.075f, 0.06f);
-	const FLinearColor Asphalt(0.05f, 0.05f, 0.055f);
-	const FLinearColor Concrete(0.58f, 0.57f, 0.54f);
-	const FLinearColor LaneWhite(0.85f, 0.85f, 0.8f);
-	const FLinearColor Steel(0.2f, 0.2f, 0.22f);
+	const FLinearColor NbWhite(0.93f, 0.93f, 0.9f);
+	const FLinearColor NbStone(0.32f, 0.3f, 0.27f);
+	const FLinearColor NbPathGrey(0.5f, 0.48f, 0.45f);
+	const FLinearColor NbDarkWood(0.25f, 0.14f, 0.07f);
+	const FLinearColor NbBrick(0.42f, 0.13f, 0.07f);
+	const FLinearColor NbLeaves(0.1f, 0.32f, 0.06f);
+	const FLinearColor NbLeavesLight(0.2f, 0.42f, 0.08f);
+	const FLinearColor NbInterior(0.1f, 0.075f, 0.06f);
+	const FLinearColor NbAsphalt(0.05f, 0.05f, 0.055f);
+	const FLinearColor NbConcrete(0.58f, 0.57f, 0.54f);
+	const FLinearColor NbLaneWhite(0.85f, 0.85f, 0.8f);
+	const FLinearColor NbSteel(0.2f, 0.2f, 0.22f);
 
 	// Ground level outside (top of the yard grass), and where lots sit.
-	constexpr double GroundTop = -19.0;
-	constexpr double LotSpacing = 1800.0;
+	constexpr double NbGroundTop = -19.0;
+	constexpr double NbLotSpacing = 1800.0;
 	// Street cross-section along Y: north sidewalk, road, south sidewalk.
-	constexpr double NorthWalkY = -1200.0;
-	constexpr double RoadY = -1650.0;
-	constexpr double SouthWalkY = -2100.0;
-	constexpr double RoadWestX = -12000.0;
+	constexpr double NbNorthWalkY = -1200.0;
+	constexpr double NbRoadY = -1650.0;
+	constexpr double NbSouthWalkY = -2100.0;
+	constexpr double NbRoadWestX = -12000.0;
 	// The cul-de-sac's centre: its 17 m sidewalk ring stops just short of the last lots (which end at x = 6300).
-	constexpr double RoadEastX = 8300.0;
-	constexpr double CulDeSacRadius = 1500.0;
+	constexpr double NbRoadEastX = 8300.0;
+	constexpr double NbCulDeSacRadius = 1500.0;
 
-	FTransform Local(const FTransform& Lot, const FVector& Location, const FRotator& Rotation = FRotator::ZeroRotator, const FVector& Scale = FVector::OneVector)
+	FTransform NbLocal(const FTransform& Lot, const FVector& Location, const FRotator& Rotation = FRotator::ZeroRotator, const FVector& Scale = FVector::OneVector)
 	{
 		return FTransform(Rotation, Location, Scale) * Lot;
 	}
@@ -72,6 +72,8 @@ ACookieNeighborhood::ACookieNeighborhood()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	// Static, like every piece attached to it.
+	RootComponent->SetMobility(EComponentMobility::Static);
 #if WITH_EDITORONLY_DATA
 	// It spans the whole map; never stream it out.
 	bIsSpatiallyLoaded = false;
@@ -151,7 +153,7 @@ UMaterialInterface* ACookieNeighborhood::Flat(const FLinearColor& Color)
 	{
 		return *Found;
 	}
-	UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(LoadMaterial(PlaceholderPath), this);
+	UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(NbLoadMaterial(NbPlaceholderPath), this);
 	Material->SetVectorParameterValue(TEXT("Color"), Color);
 	Materials.Add(Material);
 	FlatLookup.Add(Key, Material);
@@ -168,7 +170,7 @@ UMaterialInterface* ACookieNeighborhood::Wall(const FLinearColor& Exterior)
 	{
 		return *Found;
 	}
-	UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(LoadMaterial(TwoToneWallPath), this);
+	UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(NbLoadMaterial(NbTwoToneWallPath), this);
 	Material->SetVectorParameterValue(TEXT("SideA"), Exterior);
 	Material->SetVectorParameterValue(TEXT("SideB"), Exterior);
 	Materials.Add(Material);
@@ -247,12 +249,12 @@ void ACookieNeighborhood::Build()
 	TArray<FLotSpot> Spots;
 	for (int32 I : { -2, -1, 1, 2, 3 })
 	{
-		Spots.Add({ I * LotSpacing, 0.0, 0.0 });
+		Spots.Add({ I * NbLotSpacing, 0.0, 0.0 });
 	}
 	for (int32 I : { -2, -1, 0, 1, 2, 3 })
 	{
 		// The south lots' fences line the south sidewalk (y = -2200), so their houses sit 11 m behind it.
-		Spots.Add({ I * LotSpacing, -3300.0, 180.0 });
+		Spots.Add({ I * NbLotSpacing, -3300.0, 180.0 });
 	}
 	for (int32 Index = 0; Index < Spots.Num(); ++Index)
 	{
@@ -269,51 +271,51 @@ void ACookieNeighborhood::Build()
 void ACookieNeighborhood::BuildGround()
 {
 	// One big lawn under everything, just under the player's yard so they don't fight.
-	UStaticMesh* Cube = LoadMesh(CubePath);
-	Add(Cube, LoadMaterial(GrassPath), FTransform(FRotator::ZeroRotator, FVector(2000.0, -1650.0, GroundTop - 10.0), FVector(800.0, 600.0, 0.2)));
+	UStaticMesh* Cube = NbLoadMesh(NbCubePath);
+	Add(Cube, NbLoadMaterial(NbGrassPath), FTransform(FRotator::ZeroRotator, FVector(2000.0, -1650.0, NbGroundTop - 10.0), FVector(800.0, 600.0, 0.2)));
 }
 
 void ACookieNeighborhood::BuildStreet()
 {
-	UStaticMesh* Cube = LoadMesh(CubePath);
-	UStaticMesh* Cylinder = LoadMesh(CylinderPath);
-	UMaterialInterface* Road = Flat(Asphalt);
-	UMaterialInterface* Walk = Flat(Concrete);
+	UStaticMesh* Cube = NbLoadMesh(NbCubePath);
+	UStaticMesh* Cylinder = NbLoadMesh(NbCylinderPath);
+	UMaterialInterface* Road = Flat(NbAsphalt);
+	UMaterialInterface* Walk = Flat(NbConcrete);
 
 	// Road and sidewalks (raised like a curb), from far off west to the cul-de-sac.
-	const double Length = RoadEastX - RoadWestX;
-	const double MidX = (RoadEastX + RoadWestX) * 0.5;
-	Add(Cube, Road, FTransform(FRotator::ZeroRotator, FVector(MidX, RoadY, GroundTop + 1.5 - 2.0), FVector(Length / 100.0, 7.0, 0.04)));
-	Add(Cube, Walk, FTransform(FRotator::ZeroRotator, FVector(MidX, NorthWalkY, GroundTop + 10.0 - 5.0), FVector(Length / 100.0, 2.0, 0.1)));
-	Add(Cube, Walk, FTransform(FRotator::ZeroRotator, FVector(MidX, SouthWalkY, GroundTop + 10.0 - 5.0), FVector(Length / 100.0, 2.0, 0.1)));
+	const double Length = NbRoadEastX - NbRoadWestX;
+	const double MidX = (NbRoadEastX + NbRoadWestX) * 0.5;
+	Add(Cube, Road, FTransform(FRotator::ZeroRotator, FVector(MidX, NbRoadY, NbGroundTop + 1.5 - 2.0), FVector(Length / 100.0, 7.0, 0.04)));
+	Add(Cube, Walk, FTransform(FRotator::ZeroRotator, FVector(MidX, NbNorthWalkY, NbGroundTop + 10.0 - 5.0), FVector(Length / 100.0, 2.0, 0.1)));
+	Add(Cube, Walk, FTransform(FRotator::ZeroRotator, FVector(MidX, NbSouthWalkY, NbGroundTop + 10.0 - 5.0), FVector(Length / 100.0, 2.0, 0.1)));
 
 	// Dashed centre line.
-	UMaterialInterface* Lane = Flat(LaneWhite);
-	for (double X = RoadWestX + 300.0; X < RoadEastX - 300.0; X += 700.0)
+	UMaterialInterface* Lane = Flat(NbLaneWhite);
+	for (double X = NbRoadWestX + 300.0; X < NbRoadEastX - 300.0; X += 700.0)
 	{
-		Add(Cube, Lane, FTransform(FRotator::ZeroRotator, FVector(X, RoadY, GroundTop + 1.6), FVector(3.0, 0.14, 0.01)));
+		Add(Cube, Lane, FTransform(FRotator::ZeroRotator, FVector(X, NbRoadY, NbGroundTop + 1.6), FVector(3.0, 0.14, 0.01)));
 	}
 
 	// Cul-de-sac: a round end with a sidewalk ring and a planted island in the middle.
-	const FVector Bulb(RoadEastX, RoadY, 0.0);
-	Add(Cylinder, Walk, FTransform(FRotator::ZeroRotator, Bulb + FVector(0.0, 0.0, GroundTop + 10.0 - 5.0), FVector((CulDeSacRadius + 200.0) / 50.0, (CulDeSacRadius + 200.0) / 50.0, 0.1)));
-	Add(Cylinder, Road, FTransform(FRotator::ZeroRotator, Bulb + FVector(0.0, 0.0, GroundTop + 11.0 - 2.0), FVector(CulDeSacRadius / 50.0, CulDeSacRadius / 50.0, 0.04)));
-	Add(Cylinder, Walk, FTransform(FRotator::ZeroRotator, Bulb + FVector(0.0, 0.0, GroundTop + 20.0 - 5.0), FVector(9.0, 9.0, 0.1)));
-	Add(Cylinder, LoadMaterial(GrassPath), FTransform(FRotator::ZeroRotator, Bulb + FVector(0.0, 0.0, GroundTop + 22.0 - 5.0), FVector(8.4, 8.4, 0.1)));
-	BuildTree(FTransform(FRotator(0.0, 40.0, 0.0), Bulb + FVector(0.0, 0.0, GroundTop + 22.0)), false, 1.15);
+	const FVector Bulb(NbRoadEastX, NbRoadY, 0.0);
+	Add(Cylinder, Walk, FTransform(FRotator::ZeroRotator, Bulb + FVector(0.0, 0.0, NbGroundTop + 10.0 - 5.0), FVector((NbCulDeSacRadius + 200.0) / 50.0, (NbCulDeSacRadius + 200.0) / 50.0, 0.1)));
+	Add(Cylinder, Road, FTransform(FRotator::ZeroRotator, Bulb + FVector(0.0, 0.0, NbGroundTop + 11.0 - 2.0), FVector(NbCulDeSacRadius / 50.0, NbCulDeSacRadius / 50.0, 0.04)));
+	Add(Cylinder, Walk, FTransform(FRotator::ZeroRotator, Bulb + FVector(0.0, 0.0, NbGroundTop + 20.0 - 5.0), FVector(9.0, 9.0, 0.1)));
+	Add(Cylinder, NbLoadMaterial(NbGrassPath), FTransform(FRotator::ZeroRotator, Bulb + FVector(0.0, 0.0, NbGroundTop + 22.0 - 5.0), FVector(8.4, 8.4, 0.1)));
+	BuildTree(FTransform(FRotator(0.0, 40.0, 0.0), Bulb + FVector(0.0, 0.0, NbGroundTop + 22.0)), false, 1.15);
 
 	// Street lamps on both sidewalks, between lots so they never stand in front of a gate.
-	UMaterialInterface* Pole = Flat(Steel);
+	UMaterialInterface* Pole = Flat(NbSteel);
 	UMaterialInterface* Glass = Flat(FLinearColor(0.95f, 0.9f, 0.7f));
-	for (double X = -4500.0; X <= 6300.0; X += LotSpacing)
+	for (double X = -4500.0; X <= 6300.0; X += NbLotSpacing)
 	{
-		for (const double Y : { NorthWalkY - 70.0, SouthWalkY + 70.0 })
+		for (const double Y : { NbNorthWalkY - 70.0, NbSouthWalkY + 70.0 })
 		{
-			const double Facing = Y > RoadY ? -1.0 : 1.0;
-			Add(Cylinder, Pole, FTransform(FRotator::ZeroRotator, FVector(X, Y, GroundTop + 230.0), FVector(0.12, 0.12, 4.6)));
-			Add(Cube, Pole, FTransform(FRotator::ZeroRotator, FVector(X, Y + Facing * 60.0, GroundTop + 455.0), FVector(0.08, 1.3, 0.08)));
-			Add(Cube, Pole, FTransform(FRotator::ZeroRotator, FVector(X, Y + Facing * 115.0, GroundTop + 445.0), FVector(0.4, 0.55, 0.16)));
-			Add(Cube, Glass, FTransform(FRotator::ZeroRotator, FVector(X, Y + Facing * 115.0, GroundTop + 435.0), FVector(0.32, 0.45, 0.04)));
+			const double Facing = Y > NbRoadY ? -1.0 : 1.0;
+			Add(Cylinder, Pole, FTransform(FRotator::ZeroRotator, FVector(X, Y, NbGroundTop + 230.0), FVector(0.12, 0.12, 4.6)));
+			Add(Cube, Pole, FTransform(FRotator::ZeroRotator, FVector(X, Y + Facing * 60.0, NbGroundTop + 455.0), FVector(0.08, 1.3, 0.08)));
+			Add(Cube, Pole, FTransform(FRotator::ZeroRotator, FVector(X, Y + Facing * 115.0, NbGroundTop + 445.0), FVector(0.4, 0.55, 0.16)));
+			Add(Cube, Glass, FTransform(FRotator::ZeroRotator, FVector(X, Y + Facing * 115.0, NbGroundTop + 435.0), FVector(0.32, 0.45, 0.04)));
 		}
 	}
 }
@@ -321,16 +323,16 @@ void ACookieNeighborhood::BuildStreet()
 void ACookieNeighborhood::BuildWallRun(const FTransform& Lot, const TArray<TPair<double, TCHAR>>& Pieces, const FVector& From, const FVector& Along,
 	double Yaw, double Z, UMaterialInterface* WallMaterial, TArray<FVector>* OutWindowCentres)
 {
-	UStaticMesh* Plain = LoadMesh(WallPlainPath);
-	UStaticMesh* Window = LoadMesh(WallWindowPath);
-	UStaticMesh* DoorWall = LoadMesh(WallDoorPath);
+	UStaticMesh* Plain = NbLoadMesh(NbWallPlainPath);
+	UStaticMesh* Window = NbLoadMesh(NbWallWindowPath);
+	UStaticMesh* DoorWall = NbLoadMesh(NbWallDoorPath);
 	double Offset = 0.0;
 	for (const TPair<double, TCHAR>& Piece : Pieces)
 	{
 		const double Width = Piece.Key * 250.0;
 		const FVector Centre = From + Along * (Offset + Width * 0.5) + FVector(0.0, 0.0, Z);
 		UStaticMesh* Mesh = Piece.Value == 'W' ? Window : (Piece.Value == 'D' ? DoorWall : Plain);
-		Add(Mesh, WallMaterial, Local(Lot, Centre, FRotator(0.0, Yaw, 0.0), FVector(Piece.Key, 1.0, 1.0)));
+		Add(Mesh, WallMaterial, NbLocal(Lot, Centre, FRotator(0.0, Yaw, 0.0), FVector(Piece.Key, 1.0, 1.0)));
 		if (Piece.Value == 'W' && OutWindowCentres)
 		{
 			OutWindowCentres->Add(Centre);
@@ -341,10 +343,10 @@ void ACookieNeighborhood::BuildWallRun(const FTransform& Lot, const TArray<TPair
 
 void ACookieNeighborhood::BuildHouse(const FTransform& Lot, const FHouseDesign& Design, const FPalette& Palette, FRandomStream& Random)
 {
-	UStaticMesh* Cube = LoadMesh(CubePath);
-	UStaticMesh* Ramp = LoadMesh(RampPath);
-	UStaticMesh* Door = LoadMesh(DoorPath);
-	UStaticMesh* Flower = LoadMesh(FlowerPath);
+	UStaticMesh* Cube = NbLoadMesh(NbCubePath);
+	UStaticMesh* Ramp = NbLoadMesh(NbRampPath);
+	UStaticMesh* Door = NbLoadMesh(NbDoorPath);
+	UStaticMesh* Flower = NbLoadMesh(NbFlowerPath);
 	UMaterialInterface* WallMaterial = Wall(Palette.Wall);
 	UMaterialInterface* Gable = Flat(Palette.Wall);
 	UMaterialInterface* Roof = Flat(Palette.Roof);
@@ -356,8 +358,8 @@ void ACookieNeighborhood::BuildHouse(const FTransform& Lot, const FHouseDesign& 
 	const double WallTop = 250.0 * Design.Storeys;
 
 	// Foundation and the dark rooms you glimpse through the windows.
-	Add(Cube, Flat(Stone), Local(Lot, FVector(0.0, 0.0, -10.0), FRotator::ZeroRotator, FVector((W + 20.0) / 100.0, (D + 20.0) / 100.0, 0.18)));
-	Add(Cube, Flat(Interior), Local(Lot, FVector(0.0, 0.0, WallTop * 0.5), FRotator::ZeroRotator, FVector((W - 50.0) / 100.0, (D - 50.0) / 100.0, (WallTop - 6.0) / 100.0)));
+	Add(Cube, Flat(NbStone), NbLocal(Lot, FVector(0.0, 0.0, -10.0), FRotator::ZeroRotator, FVector((W + 20.0) / 100.0, (D + 20.0) / 100.0, 0.18)));
+	Add(Cube, Flat(NbInterior), NbLocal(Lot, FVector(0.0, 0.0, WallTop * 0.5), FRotator::ZeroRotator, FVector((W - 50.0) / 100.0, (D - 50.0) / 100.0, (WallTop - 6.0) / 100.0)));
 
 	// Walls, storey by storey: front faces -Y (the street), as on the player's house.
 	TArray<FVector> FrontWindows;
@@ -372,7 +374,7 @@ void ACookieNeighborhood::BuildHouse(const FTransform& Lot, const FHouseDesign& 
 		if (Storey > 0)
 		{
 			// A white band between storeys.
-			Add(Cube, Flat(White), Local(Lot, FVector(0.0, 0.0, Z), FRotator::ZeroRotator, FVector((W + 28.0) / 100.0, (D + 28.0) / 100.0, 0.1)));
+			Add(Cube, Flat(NbWhite), NbLocal(Lot, FVector(0.0, 0.0, Z), FRotator::ZeroRotator, FVector((W + 28.0) / 100.0, (D + 28.0) / 100.0, 0.1)));
 		}
 	}
 
@@ -389,12 +391,12 @@ void ACookieNeighborhood::BuildHouse(const FTransform& Lot, const FHouseDesign& 
 			Offset += Piece.Key * 250.0;
 		}
 	}
-	Add(Door, nullptr, Local(Lot, FVector(DoorX + 50.0, -HalfD - 12.0, 0.0)));
-	Add(Cube, Flat(Stone), Local(Lot, FVector(DoorX, -HalfD - 47.0, -9.0), FRotator::ZeroRotator, FVector(1.8, 0.7, 0.175)));
-	Add(Cube, Roof, Local(Lot, FVector(DoorX, -HalfD - 50.0, 232.0), FRotator(0.0, 0.0, -12.0), FVector(1.7, 0.8, 0.06)));
+	Add(Door, nullptr, NbLocal(Lot, FVector(DoorX + 50.0, -HalfD - 12.0, 0.0)));
+	Add(Cube, Flat(NbStone), NbLocal(Lot, FVector(DoorX, -HalfD - 47.0, -9.0), FRotator::ZeroRotator, FVector(1.8, 0.7, 0.175)));
+	Add(Cube, Roof, NbLocal(Lot, FVector(DoorX, -HalfD - 50.0, 232.0), FRotator(0.0, 0.0, -12.0), FVector(1.7, 0.8, 0.06)));
 	for (const double Side : { -75.0, 75.0 })
 	{
-		Add(Cube, Flat(White), Local(Lot, FVector(DoorX + Side, -HalfD - 30.0, 214.0), FRotator::ZeroRotator, FVector(0.06, 0.4, 0.06)));
+		Add(Cube, Flat(NbWhite), NbLocal(Lot, FVector(DoorX + Side, -HalfD - 30.0, 214.0), FRotator::ZeroRotator, FVector(0.06, 0.4, 0.06)));
 	}
 
 	// Window boxes with flowers under some of the front windows.
@@ -404,10 +406,10 @@ void ACookieNeighborhood::BuildHouse(const FTransform& Lot, const FHouseDesign& 
 		{
 			continue;
 		}
-		Add(Cube, Flat(DarkWood), Local(Lot, FVector(Centre.X, -HalfD - 23.0, 92.0), FRotator::ZeroRotator, FVector(1.1, 0.22, 0.18)));
+		Add(Cube, Flat(NbDarkWood), NbLocal(Lot, FVector(Centre.X, -HalfD - 23.0, 92.0), FRotator::ZeroRotator, FVector(1.1, 0.22, 0.18)));
 		for (int32 F = 0; F < 3; ++F)
 		{
-			Add(Flower, nullptr, Local(Lot, FVector(Centre.X - 33.0 + 33.0 * F, -HalfD - 23.0, 101.0), FRotator(0.0, -40.0 + 40.0 * F, 0.0), FVector(0.55)));
+			Add(Flower, nullptr, NbLocal(Lot, FVector(Centre.X - 33.0 + 33.0 * F, -HalfD - 23.0, 101.0), FRotator(0.0, -40.0 + 40.0 * F, 0.0), FVector(0.55)));
 		}
 	}
 
@@ -426,58 +428,58 @@ void ACookieNeighborhood::BuildHouse(const FTransform& Lot, const FHouseDesign& 
 	const double PitchDeg = Design.PitchDegrees;
 	if (!Design.bFrontGable)
 	{
-		Add(Cube, Roof, Local(Lot, FVector(0.0, -SlopeMid, SlopeMidZ), FRotator(0.0, 0.0, -PitchDeg), FVector((Run + 2.0 * Overhang) / 100.0, SlopeLength / 100.0, 0.15)));
-		Add(Cube, Roof, Local(Lot, FVector(0.0, SlopeMid, SlopeMidZ), FRotator(0.0, 0.0, PitchDeg), FVector((Run + 2.0 * Overhang) / 100.0, SlopeLength / 100.0, 0.15)));
-		Add(Cube, Roof, Local(Lot, FVector(0.0, 0.0, Ridge + 15.0), FRotator(0.0, 0.0, 45.0), FVector((Run + 2.0 * Overhang + 10.0) / 100.0, 0.25, 0.25)));
+		Add(Cube, Roof, NbLocal(Lot, FVector(0.0, -SlopeMid, SlopeMidZ), FRotator(0.0, 0.0, -PitchDeg), FVector((Run + 2.0 * Overhang) / 100.0, SlopeLength / 100.0, 0.15)));
+		Add(Cube, Roof, NbLocal(Lot, FVector(0.0, SlopeMid, SlopeMidZ), FRotator(0.0, 0.0, PitchDeg), FVector((Run + 2.0 * Overhang) / 100.0, SlopeLength / 100.0, 0.15)));
+		Add(Cube, Roof, NbLocal(Lot, FVector(0.0, 0.0, Ridge + 15.0), FRotator(0.0, 0.0, 45.0), FVector((Run + 2.0 * Overhang + 10.0) / 100.0, 0.25, 0.25)));
 		const FVector GableScale(0.23, HalfD / 100.0, Rise / 100.0);
-		Add(Ramp, Gable, Local(Lot, FVector(-HalfW - 12.0, 0.0, WallTop), FRotator(0.0, 0.0, 0.0), GableScale));
-		Add(Ramp, Gable, Local(Lot, FVector(-HalfW + 12.0, 0.0, WallTop), FRotator(0.0, 180.0, 0.0), GableScale));
-		Add(Ramp, Gable, Local(Lot, FVector(HalfW - 12.0, 0.0, WallTop), FRotator(0.0, 0.0, 0.0), GableScale));
-		Add(Ramp, Gable, Local(Lot, FVector(HalfW + 12.0, 0.0, WallTop), FRotator(0.0, 180.0, 0.0), GableScale));
+		Add(Ramp, Gable, NbLocal(Lot, FVector(-HalfW - 12.0, 0.0, WallTop), FRotator(0.0, 0.0, 0.0), GableScale));
+		Add(Ramp, Gable, NbLocal(Lot, FVector(-HalfW + 12.0, 0.0, WallTop), FRotator(0.0, 180.0, 0.0), GableScale));
+		Add(Ramp, Gable, NbLocal(Lot, FVector(HalfW - 12.0, 0.0, WallTop), FRotator(0.0, 0.0, 0.0), GableScale));
+		Add(Ramp, Gable, NbLocal(Lot, FVector(HalfW + 12.0, 0.0, WallTop), FRotator(0.0, 180.0, 0.0), GableScale));
 	}
 	else
 	{
-		Add(Cube, Roof, Local(Lot, FVector(-SlopeMid, 0.0, SlopeMidZ), FRotator(PitchDeg, 0.0, 0.0), FVector(SlopeLength / 100.0, (Run + 2.0 * Overhang) / 100.0, 0.15)));
-		Add(Cube, Roof, Local(Lot, FVector(SlopeMid, 0.0, SlopeMidZ), FRotator(-PitchDeg, 0.0, 0.0), FVector(SlopeLength / 100.0, (Run + 2.0 * Overhang) / 100.0, 0.15)));
-		Add(Cube, Roof, Local(Lot, FVector(0.0, 0.0, Ridge + 15.0), FRotator(45.0, 0.0, 0.0), FVector(0.25, (Run + 2.0 * Overhang + 10.0) / 100.0, 0.25)));
+		Add(Cube, Roof, NbLocal(Lot, FVector(-SlopeMid, 0.0, SlopeMidZ), FRotator(PitchDeg, 0.0, 0.0), FVector(SlopeLength / 100.0, (Run + 2.0 * Overhang) / 100.0, 0.15)));
+		Add(Cube, Roof, NbLocal(Lot, FVector(SlopeMid, 0.0, SlopeMidZ), FRotator(-PitchDeg, 0.0, 0.0), FVector(SlopeLength / 100.0, (Run + 2.0 * Overhang) / 100.0, 0.15)));
+		Add(Cube, Roof, NbLocal(Lot, FVector(0.0, 0.0, Ridge + 15.0), FRotator(45.0, 0.0, 0.0), FVector(0.25, (Run + 2.0 * Overhang + 10.0) / 100.0, 0.25)));
 		const FVector GableScale(0.23, HalfW / 100.0, Rise / 100.0);
-		Add(Ramp, Gable, Local(Lot, FVector(0.0, -HalfD - 12.0, WallTop), FRotator(0.0, 90.0, 0.0), GableScale));
-		Add(Ramp, Gable, Local(Lot, FVector(0.0, -HalfD + 11.0, WallTop), FRotator(0.0, -90.0, 0.0), GableScale));
-		Add(Ramp, Gable, Local(Lot, FVector(0.0, HalfD - 11.0, WallTop), FRotator(0.0, 90.0, 0.0), GableScale));
-		Add(Ramp, Gable, Local(Lot, FVector(0.0, HalfD + 12.0, WallTop), FRotator(0.0, -90.0, 0.0), GableScale));
+		Add(Ramp, Gable, NbLocal(Lot, FVector(0.0, -HalfD - 12.0, WallTop), FRotator(0.0, 90.0, 0.0), GableScale));
+		Add(Ramp, Gable, NbLocal(Lot, FVector(0.0, -HalfD + 11.0, WallTop), FRotator(0.0, -90.0, 0.0), GableScale));
+		Add(Ramp, Gable, NbLocal(Lot, FVector(0.0, HalfD - 11.0, WallTop), FRotator(0.0, 90.0, 0.0), GableScale));
+		Add(Ramp, Gable, NbLocal(Lot, FVector(0.0, HalfD + 12.0, WallTop), FRotator(0.0, -90.0, 0.0), GableScale));
 	}
 
-	// Brick chimney through one slope.
+	// NbBrick chimney through one slope.
 	if (Random.FRand() < 0.8)
 	{
 		const FVector At = Design.bFrontGable ? FVector(HalfW * 0.4, HalfD * 0.4, 0.0) : FVector(-HalfW * 0.6, HalfD * 0.3, 0.0);
 		const double RoofAt = Ridge - (Design.bFrontGable ? FMath::Abs(At.X) : FMath::Abs(At.Y)) * FMath::Tan(Pitch);
 		const double Top = Ridge + 90.0;
 		const double Bottom = RoofAt - 40.0;
-		Add(Cube, Flat(Brick), Local(Lot, FVector(At.X, At.Y, (Top + Bottom) * 0.5), FRotator::ZeroRotator, FVector(0.7, 0.7, (Top - Bottom) / 100.0)));
-		Add(Cube, Flat(Stone), Local(Lot, FVector(At.X, At.Y, Top + 5.0), FRotator::ZeroRotator, FVector(0.85, 0.85, 0.1)));
+		Add(Cube, Flat(NbBrick), NbLocal(Lot, FVector(At.X, At.Y, (Top + Bottom) * 0.5), FRotator::ZeroRotator, FVector(0.7, 0.7, (Top - Bottom) / 100.0)));
+		Add(Cube, Flat(NbStone), NbLocal(Lot, FVector(At.X, At.Y, Top + 5.0), FRotator::ZeroRotator, FVector(0.85, 0.85, 0.1)));
 	}
 }
 
 void ACookieNeighborhood::BuildTree(const FTransform& Where, bool bPine, double Scale)
 {
-	Add(LoadMesh(bPine ? TreePinePath : TreeRoundPath), nullptr, FTransform(Where.GetRotation(), Where.GetLocation(), FVector(Scale)));
+	Add(NbLoadMesh(bPine ? NbTreePinePath : NbTreeRoundPath), nullptr, FTransform(Where.GetRotation(), Where.GetLocation(), FVector(Scale)));
 }
 
 void ACookieNeighborhood::BuildLot(const FTransform& Lot, const FHouseDesign& Design, const FPalette& Palette, FRandomStream& Random)
 {
-	UStaticMesh* Cube = LoadMesh(CubePath);
+	UStaticMesh* Cube = NbLoadMesh(NbCubePath);
 	BuildHouse(Lot, Design, Palette, Random);
 
 	// Path from the porch to the gate.
 	const double PorchY = -Design.Depth * 0.5 - 80.0;
 	const double GateY = -1100.0;
-	Add(Cube, Flat(PathGrey), Local(Lot, FVector(0.0, (PorchY + GateY) * 0.5, -18.0), FRotator::ZeroRotator, FVector(1.5, (PorchY - GateY) / 100.0, 0.04)));
+	Add(Cube, Flat(NbPathGrey), NbLocal(Lot, FVector(0.0, (PorchY + GateY) * 0.5, -18.0), FRotator::ZeroRotator, FVector(1.5, (PorchY - GateY) / 100.0, 0.04)));
 
 	// A picket fence like the player's, or a low hedge along the front.
 	if (Random.FRand() < 0.6)
 	{
-		Add(LoadMesh(FencePath), nullptr, Local(Lot, FVector(-900.0, -1100.0, 32.0)));
+		Add(NbLoadMesh(NbFencePath), nullptr, NbLocal(Lot, FVector(-900.0, -1100.0, 32.0)));
 	}
 	else
 	{
@@ -488,14 +490,14 @@ void ACookieNeighborhood::BuildLot(const FTransform& Lot, const FHouseDesign& De
 				continue;   // the gap for the path
 			}
 			const int32 Variant = Random.RandRange(0, 2);
-			Add(LoadMesh(ClumpPaths[Variant]), Flat(Random.FRand() < 0.5 ? Leaves : LeavesLight),
-				Local(Lot, FVector(X, -1060.0, -8.0), FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(1.25, 1.0, 0.85)));
+			Add(NbLoadMesh(NbClumpPaths[Variant]), Flat(Random.FRand() < 0.5 ? NbLeaves : NbLeavesLight),
+				NbLocal(Lot, FVector(X, -1060.0, -8.0), FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(1.25, 1.0, 0.85)));
 		}
 	}
 
 	// Mailbox by the gate.
-	Add(Cube, Flat(Palette.Mailbox), Local(Lot, FVector(150.0, -1080.0, 100.0), FRotator::ZeroRotator, FVector(0.25, 0.45, 0.22)));
-	Add(Cube, Flat(DarkWood), Local(Lot, FVector(150.0, -1080.0, 37.0), FRotator::ZeroRotator, FVector(0.08, 0.08, 1.1)));
+	Add(Cube, Flat(Palette.Mailbox), NbLocal(Lot, FVector(150.0, -1080.0, 100.0), FRotator::ZeroRotator, FVector(0.25, 0.45, 0.22)));
+	Add(Cube, Flat(NbDarkWood), NbLocal(Lot, FVector(150.0, -1080.0, 37.0), FRotator::ZeroRotator, FVector(0.08, 0.08, 1.1)));
 
 	// Bushes along the front of the house.
 	const double FrontY = -Design.Depth * 0.5 - 70.0;
@@ -509,8 +511,8 @@ void ACookieNeighborhood::BuildLot(const FTransform& Lot, const FHouseDesign& De
 				continue;
 			}
 			const int32 Variant = Random.RandRange(0, 2);
-			Add(LoadMesh(ClumpPaths[Variant]), Flat(Random.FRand() < 0.5 ? Leaves : LeavesLight),
-				Local(Lot, FVector(X, FrontY, -6.0), FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(1.1, 0.95, 0.8)));
+			Add(NbLoadMesh(NbClumpPaths[Variant]), Flat(Random.FRand() < 0.5 ? NbLeaves : NbLeavesLight),
+				NbLocal(Lot, FVector(X, FrontY, -6.0), FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(1.1, 0.95, 0.8)));
 		}
 	}
 
@@ -523,8 +525,8 @@ void ACookieNeighborhood::BuildLot(const FTransform& Lot, const FHouseDesign& De
 		{
 			continue;
 		}
-		const FVector Jitter(Random.FRandRange(-60.0, 60.0), Random.FRandRange(-60.0, 60.0), GroundTop + 1.0);
-		const FTransform Where = Local(Lot, Spot + Jitter, FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0));
+		const FVector Jitter(Random.FRandRange(-60.0, 60.0), Random.FRandRange(-60.0, 60.0), NbGroundTop + 1.0);
+		const FTransform Where = NbLocal(Lot, Spot + Jitter, FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0));
 		BuildTree(Where, Random.FRand() < 0.35, Random.FRandRange(0.85, 1.12));
 	}
 }
@@ -534,18 +536,18 @@ void ACookieNeighborhood::BuildParkAndTreeLines(FRandomStream& Random)
 	// Tree lines behind both rows of lots, so the street has an edge.
 	for (double X = -6000.0; X <= 7000.0; X += Random.FRandRange(380.0, 560.0))
 	{
-		BuildTree(FTransform(FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(X, Random.FRandRange(1050.0, 1500.0), GroundTop)), Random.FRand() < 0.45, Random.FRandRange(0.9, 1.25));
-		BuildTree(FTransform(FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(X + 150.0, Random.FRandRange(-4750.0, -4300.0), GroundTop)), Random.FRand() < 0.45, Random.FRandRange(0.9, 1.25));
+		BuildTree(FTransform(FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(X, Random.FRandRange(1050.0, 1500.0), NbGroundTop)), Random.FRand() < 0.45, Random.FRandRange(0.9, 1.25));
+		BuildTree(FTransform(FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(X + 150.0, Random.FRandRange(-4750.0, -4300.0), NbGroundTop)), Random.FRand() < 0.45, Random.FRandRange(0.9, 1.25));
 	}
 
 	// Along the road west, where it runs off into the distance.
-	for (double X = -6300.0; X > RoadWestX + 500.0; X -= Random.FRandRange(500.0, 900.0))
+	for (double X = -6300.0; X > NbRoadWestX + 500.0; X -= Random.FRandRange(500.0, 900.0))
 	{
 		for (const double Y : { -950.0, -2350.0 })
 		{
 			if (Random.FRand() < 0.8)
 			{
-				BuildTree(FTransform(FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(X, Y + Random.FRandRange(-250.0, 250.0), GroundTop)), Random.FRand() < 0.5, Random.FRandRange(0.9, 1.3));
+				BuildTree(FTransform(FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(X, Y + Random.FRandRange(-250.0, 250.0), NbGroundTop)), Random.FRand() < 0.5, Random.FRandRange(0.9, 1.3));
 			}
 		}
 	}
@@ -572,6 +574,6 @@ void ACookieNeighborhood::BuildParkAndTreeLines(FRandomStream& Random)
 			continue;
 		}
 		P += FVector2D(Random.FRandRange(-300.0, 300.0), Random.FRandRange(-300.0, 300.0));
-		BuildTree(FTransform(FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(P.X, P.Y, GroundTop)), Random.FRand() < 0.4, Random.FRandRange(1.0, 1.4));
+		BuildTree(FTransform(FRotator(0.0, Random.FRandRange(0.0, 360.0), 0.0), FVector(P.X, P.Y, NbGroundTop)), Random.FRand() < 0.4, Random.FRandRange(1.0, 1.4));
 	}
 }

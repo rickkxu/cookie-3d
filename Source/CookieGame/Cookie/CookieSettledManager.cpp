@@ -354,16 +354,35 @@ void ACookieSettledManager::AddToPileNear(const FVector& Location, int64 Count)
 	const bool bLandsIndoors = IsInsideHouse(Location);
 
 	// Join the heap the cookies land on (the biggest, if heaps overlap), or failing that the nearest one close by
-	// that isn't behind a wall. Indoor heaps stop growing at the cap so they don't fill the room.
+	// that isn't behind a wall. Indoor heaps stop growing at the cap, so cookies spread into new heaps across the
+	// room instead of one heap filling it; but once there are already several full heaps around, the room is
+	// simply filling up, and the cookies go onto the nearest of them.
 	FPile* Best = nullptr;
 	double BestScore = 0.0;
+	FPile* NearestFull = nullptr;
+	double NearestFullDist = 0.0;
+	int32 FullNearby = 0;
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(CookiePileMerge), false);
 	Params.AddIgnoredActor(this);
 	for (const TUniquePtr<FPile>& Candidate : Piles)
 	{
 		FPile& Pile = *Candidate;
-		if (Pile.bIndoor != bLandsIndoors || (Pile.bIndoor && Pile.Count >= Settings.MaxCookiesPerPile))
+		if (Pile.bIndoor != bLandsIndoors)
 		{
+			continue;
+		}
+		if (Pile.bIndoor && Pile.Count >= Settings.MaxCookiesPerPile)
+		{
+			const double Dist = FVector::Dist(Pile.Ground, Location);
+			if (Dist < Settings.PileMergeRadius * 2.0)
+			{
+				++FullNearby;
+				if (!NearestFull || Dist < NearestFullDist)
+				{
+					NearestFull = &Pile;
+					NearestFullDist = Dist;
+				}
+			}
 			continue;
 		}
 		const double Radius = GetPileRadius(Pile.Count);
@@ -394,6 +413,10 @@ void ACookieSettledManager::AddToPileNear(const FVector& Location, int64 Count)
 		}
 	}
 
+	if (!Best && FullNearby >= 3)
+	{
+		Best = NearestFull;
+	}
 	if (Best)
 	{
 		Best->Count += Count;
@@ -692,9 +715,18 @@ void ACookieSettledManager::StartPileBuild(FPile& Pile)
 	Pile.Staging.Reserve(Pile.BuildTotal);
 	Pile.bBuilding = true;
 
-	// Small heaps are laid out at once: each new cookie shows there, and it's cheap.
-	if (Pile.BuildTotal <= ImmediateBuildCookies)
+	// A brand-new heap gets its core (its collision) straight away, so nothing falls through while its cookies are
+	// still being laid out. A growing heap swaps its core with its cookies, so the core never shows above them.
+	if (Pile.Chunks.IsEmpty())
 	{
+		BuildPileCore(Pile, Pile.BuildShape);
+	}
+
+	// Small heaps are laid out at once: each new cookie shows there, and it's cheap. (Within a per-frame allowance:
+	// past it, they wait their turn with the big ones, so a burst of new heaps can't stall a frame.)
+	if (Pile.BuildTotal <= ImmediateBuildCookies && ImmediateCookiesThisFrame < ImmediateBuildCookies * 2)
+	{
+		ImmediateCookiesThisFrame += Pile.BuildTotal;
 		FTransform Transform;
 		for (int32 Index = 0; Index < Pile.BuildTotal; ++Index)
 		{
@@ -1111,7 +1143,9 @@ void ACookieSettledManager::EmitSpouts(ECookieItem Item, const FTransform& ItemT
 
 		// The spout feeds the heap at its target. Each cookie lands somewhere on that heap's current surface (on a
 		// new or small heap, within TargetSpread), so the heap grows up and out evenly.
+		// The anchor is on whatever is under the target (an item still flying has its target up in the air with it).
 		FVector Anchor = ItemTransform.TransformPosition(Spout.Target);
+		Anchor.Z = GetLandingHeight(Anchor);
 		const double HeapRadius = GetPileRadiusAt(Anchor);
 		const double Spread = HeapRadius > 0.0 ? FMath::Max(HeapRadius * 0.85, 120.0) : Spout.TargetSpread * 0.4;
 		auto RandomTarget = [&]()
@@ -1239,6 +1273,7 @@ void ACookieSettledManager::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	const double Start = FPlatformTime::Seconds();
+	ImmediateCookiesThisFrame = 0;
 
 	EmitFromSettledItems(DeltaSeconds);
 	TickGhosts(DeltaSeconds);
