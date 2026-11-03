@@ -5,12 +5,15 @@
 #include "UObject/SoftObjectPtr.h"
 #include "CookieTypes.generated.h"
 
-// Things the player can buy. Add new house items here and in UCookieGameSettings::GetItem.
+// Things the player can buy. Add new items here and in UCookieGameSettings::GetItem.
 UENUM(BlueprintType)
 enum class ECookieItem : uint8
 {
 	ToasterOven,
 	Grandma,
+	CookieTree,
+	Bakery,
+	Factory,
 	Count UMETA(Hidden)
 };
 ENUM_RANGE_BY_COUNT(ECookieItem, ECookieItem::Count);
@@ -65,6 +68,70 @@ struct FCookieLaunchSpec
 	bool bUseCCD = false;
 };
 
+// Where a big producer spews its cookies: out of Start (a chimney, a smokestack, a canopy), arcing onto a heap
+// around Target. Both are in the item's own space, so they turn with it however it landed.
+USTRUCT(BlueprintType)
+struct FCookieSpout
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Spout")
+	FVector Start = FVector::ZeroVector;
+
+	// Each cookie leaves from a random point up to this far from Start on each axis.
+	UPROPERTY(EditAnywhere, Category = "Spout")
+	FVector StartJitter = FVector::ZeroVector;
+
+	// Centre of the heap this spout feeds. Only X and Y count; the cookies land on whatever is there.
+	UPROPERTY(EditAnywhere, Category = "Spout")
+	FVector Target = FVector::ZeroVector;
+
+	// Cookies land anywhere within this radius (cm) of Target, so the heap grows round.
+	UPROPERTY(EditAnywhere, Category = "Spout", meta = (ClampMin = "0.0"))
+	float TargetSpread = 200.f;
+
+	// Time in the air. Longer flights arc higher.
+	UPROPERTY(EditAnywhere, Category = "Spout", meta = (ClampMin = "0.2"))
+	float FlightSeconds = 1.f;
+
+	// Fraction of the item's production that comes out of this spout.
+	UPROPERTY(EditAnywhere, Category = "Spout", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float Share = 1.f;
+
+	// How many cookies a second are drawn flying. Past this, each drawn cookie stands for several.
+	UPROPERTY(EditAnywhere, Category = "Spout", meta = (ClampMin = "1.0"))
+	float VisibleCookiesPerSecond = 30.f;
+};
+
+// An item standing in the world from the start (dropped onto whatever is under Location).
+USTRUCT(BlueprintType)
+struct FCookieDemoPlacement
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Demo")
+	ECookieItem Item = ECookieItem::Factory;
+
+	UPROPERTY(EditAnywhere, Category = "Demo")
+	FVector Location = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, Category = "Demo")
+	float Yaw = 0.f;
+};
+
+// A heap of cookies already there when play starts (they count toward the bank, like any cookie in the world).
+USTRUCT(BlueprintType)
+struct FCookieDemoHeap
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Demo")
+	FVector Location = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, Category = "Demo", meta = (ClampMin = "1"))
+	int64 Cookies = 100000;
+};
+
 USTRUCT(BlueprintType)
 struct FCookieItemSpec
 {
@@ -86,4 +153,8 @@ struct FCookieItemSpec
 
 	UPROPERTY(EditAnywhere, Category = "Item")
 	FCookieLaunchSpec Launch;
+
+	// Big producers spew streams of cookies from these instead of popping single cookies out of their top.
+	UPROPERTY(EditAnywhere, Category = "Item")
+	TArray<FCookieSpout> Spouts;
 };

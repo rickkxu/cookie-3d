@@ -41,6 +41,7 @@ private:
 	void Launch(const FCookieLaunchSpec& Spec, const FVector& Velocity);
 
 	void EmitCookie();
+	void EmitFromSpouts();
 
 	// Runs a few times a second. Freezes this into an instance once it has been still long enough.
 	void CheckSettled();
@@ -52,6 +53,8 @@ private:
 	FTimerHandle SettleTimer;
 	bool bIsCookie = false;
 	ECookieItem Item = ECookieItem::Grandma;
+	// Big producers' cookies not yet launched, one per spout.
+	TArray<float> SpoutCarry;
 	float StillSeconds = 0.f;
 	float FlyingSeconds = 0.f;
 };

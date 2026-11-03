@@ -44,6 +44,7 @@ public:
 
 private:
 	void SpawnStressBatch();
+	void PlaceDemoItems();
 	void LogStats(float DeltaSeconds);
 
 	UPROPERTY(Transient)

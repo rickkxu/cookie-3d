@@ -212,7 +212,8 @@ void ACookieGrandma::ApplyLook()
 void ACookieGrandma::StartEmitting()
 {
 	// Random first delay so a burst of purchases doesn't emit in lockstep.
-	const float Interval = UCookieGameSettings::Get().Grandma.GetEmitIntervalSeconds();
+	const float Production = UCookieGameSettings::Get().GetProduction(ECookieItem::Grandma);
+	const float Interval = Production > 0.f ? 1.f / Production : 0.f;
 	if (Interval <= 0.f)
 	{
 		return;

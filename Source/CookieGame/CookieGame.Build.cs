@@ -24,7 +24,8 @@ public class CookieGame : ModuleRules
 			"MeshDescription",
 			"StaticMeshDescription",
 			"RenderCore",
-			"RHI"
+			"RHI",
+			"ProceduralMeshComponent"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

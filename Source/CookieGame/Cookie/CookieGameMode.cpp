@@ -26,9 +26,42 @@ void ACookieGameMode::BeginPlay()
 	Cookies = Settings.StartingCookies;
 	Settled = GetWorld()->SpawnActor<ACookieSettledManager>();
 
-	if (Settings.StressTestToasterOvens > 0 || Settings.StressTestGrandmas > 0)
+	StressPending[static_cast<int32>(ECookieItem::CookieTree)] += Settings.StressTestCookieTrees;
+	StressPending[static_cast<int32>(ECookieItem::Bakery)] += Settings.StressTestBakeries;
+	StressPending[static_cast<int32>(ECookieItem::Factory)] += Settings.StressTestFactories;
+	StartStressTest(Settings.StressTestToasterOvens, Settings.StressTestGrandmas);
+
+	PlaceDemoItems();
+}
+
+void ACookieGameMode::PlaceDemoItems()
+{
+	// Items standing from the start: dropped straight onto the ground under each spot, already settled.
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(CookieDemoPlacement), false);
+	Params.AddIgnoredActor(Settled);
+	for (const FCookieDemoPlacement& Placement : UCookieGameSettings::Get().DemoPlacements)
 	{
-		StartStressTest(Settings.StressTestToasterOvens, Settings.StressTestGrandmas);
+		FVector Location = Placement.Location;
+		FHitResult Hit;
+		const FVector Top = Location + FVector(0.0, 0.0, 5000.0);
+		if (GetWorld()->LineTraceSingleByObjectType(Hit, Top, Top - FVector(0.0, 0.0, 10000.0), FCollisionObjectQueryParams(ECC_WorldStatic), Params))
+		{
+			Location.Z = Hit.ImpactPoint.Z;
+		}
+		// Bakery and factory pivots sit 9 cm under their foundations.
+		if (Placement.Item == ECookieItem::Bakery || Placement.Item == ECookieItem::Factory)
+		{
+			Location.Z -= 9.0;
+		}
+		++Owned[static_cast<int32>(Placement.Item)];
+		Settled->AddItem(Placement.Item, FTransform(FRotator(0.f, Placement.Yaw, 0.f), Location));
+	}
+
+	// Heaps already there: real cookies, so they're in the bank too.
+	for (const FCookieDemoHeap& Heap : UCookieGameSettings::Get().DemoHeaps)
+	{
+		Settled->AddToPileNear(Heap.Location, Heap.Cookies);
+		Cookies += static_cast<double>(Heap.Cookies);
 	}
 }
 
@@ -56,7 +89,7 @@ double ACookieGameMode::GetCookiesPerSecond() const
 	double Total = 0.0;
 	for (ECookieItem Item : TEnumRange<ECookieItem>())
 	{
-		Total += GetOwned(Item) * static_cast<double>(Settings.GetItem(Item).CookiesPerSecond);
+		Total += GetOwned(Item) * static_cast<double>(Settings.GetProduction(Item));
 	}
 	return Total;
 }
@@ -90,8 +123,17 @@ void ACookieGameMode::StartStressTest(int32 ToasterOvens, int32 Grandmas)
 {
 	StressPending[static_cast<int32>(ECookieItem::ToasterOven)] += FMath::Max(ToasterOvens, 0);
 	StressPending[static_cast<int32>(ECookieItem::Grandma)] += FMath::Max(Grandmas, 0);
+	int32 Total = 0;
+	for (int32 Pending : StressPending)
+	{
+		Total += Pending;
+	}
+	if (Total == 0)
+	{
+		return;
+	}
 	GetWorldTimerManager().SetTimer(StressTimer, this, &ACookieGameMode::SpawnStressBatch, 0.05f, true);
-	UE_LOG(LogTemp, Display, TEXT("Cookie stress test: dropping %d toaster ovens and %d grandmas"), ToasterOvens, Grandmas);
+	UE_LOG(LogTemp, Display, TEXT("Cookie stress test: dropping %d items (%d toaster ovens, %d grandmas)"), Total, ToasterOvens, Grandmas);
 }
 
 void ACookieGameMode::SpawnStressBatch()
@@ -165,7 +207,7 @@ void ACookieGameMode::LogStats(float DeltaSeconds)
 
 	// The same thread timings "stat unit" shows: whichever is largest is what limits the frame rate.
 	UE_LOG(LogTemp, Display,
-		TEXT("Cookie stats: %.0f fps (game %.1f ms, render %.1f ms, gpu %.1f ms; emit %.2f, piles %.2f ms/frame) | flying %d (cookies %d) | settled cookies %d, ovens %d | grandmas %d live (baking %d, animating %d), %d frozen | piles %d holding %lld"),
+		TEXT("Cookie stats: %.0f fps (game %.1f ms, render %.1f ms, gpu %.1f ms; emit %.2f, piles %.2f ms/frame) | flying %d (cookies %d) | settled cookies %d, ovens %d | grandmas %d live (baking %d, animating %d), %d frozen | piles %d holding %lld (largest %lld, %d surface cookies) | ghosts %d | bank %.0f"),
 		StatsFrames / StatsSeconds,
 		FPlatformTime::ToMilliseconds(GGameThreadTime), FPlatformTime::ToMilliseconds(GRenderThreadTime),
 		FPlatformTime::ToMilliseconds(RHIGetGPUFrameCycles()),
@@ -176,7 +218,11 @@ void ACookieGameMode::LogStats(float DeltaSeconds)
 		Grandmas, BakingGrandmas, AnimatingGrandmas,
 		Settled ? Settled->GetSettledItemCount(ECookieItem::Grandma) : 0,
 		Settled ? Settled->GetPileCount() : 0,
-		Settled ? Settled->GetPiledCookieCount() : int64(0));
+		Settled ? Settled->GetPiledCookieCount() : int64(0),
+		Settled ? Settled->GetLargestPileCount() : int64(0),
+		Settled ? Settled->GetPileSurfaceInstanceCount() : 0,
+		Settled ? Settled->GetGhostCookieCount() : 0,
+		Cookies);
 
 	StatsSeconds = 0.f;
 	StatsFrames = 0;

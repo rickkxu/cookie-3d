@@ -13,6 +13,7 @@
 namespace
 {
 	constexpr float SettleCheckSeconds = 0.1f;
+	constexpr float SpoutTickSeconds = 0.05f;
 }
 
 ACookieLaunchable::ACookieLaunchable()
@@ -51,17 +52,27 @@ AActor* ACookieLaunchable::SpawnItem(UWorld* World, ECookieItem Item, const FVec
 
 	const FCookieItemSpec& Spec = UCookieGameSettings::Get().GetItem(Item);
 	ACookieLaunchable* Thing = SpawnLaunched(World, Spec.Launch, Location, Rotation, Velocity);
-	const float Interval = Spec.GetEmitIntervalSeconds();
-	if (Thing && Interval > 0.f)
+	if (!Thing)
 	{
-		Thing->Item = Item;
+		return nullptr;
+	}
+	Thing->Item = Item;
+
+	if (!Spec.Spouts.IsEmpty())
+	{
+		// Big producers spew from their spouts even while they fly: a factory lobbed across the street erupts on the way.
+		Thing->SpoutCarry.SetNumZeroed(Spec.Spouts.Num());
+		World->GetTimerManager().SetTimer(Thing->EmitTimer, Thing, &ACookieLaunchable::EmitFromSpouts, SpoutTickSeconds, true);
+		return Thing;
+	}
+
+	const float Production = UCookieGameSettings::Get().GetProduction(Item);
+	const float Interval = Production > 0.f ? 1.f / Production : 0.f;
+	if (Interval > 0.f)
+	{
 		// Random first delay so a burst of purchases doesn't emit in lockstep.
 		const float FirstDelay = FMath::FRandRange(0.5f, 1.f) * Interval;
 		World->GetTimerManager().SetTimer(Thing->EmitTimer, Thing, &ACookieLaunchable::EmitCookie, Interval, true, FirstDelay);
-	}
-	else if (Thing)
-	{
-		Thing->Item = Item;
 	}
 	return Thing;
 }
@@ -154,6 +165,15 @@ void ACookieLaunchable::Launch(const FCookieLaunchSpec& Spec, const FVector& Vel
 	Mesh->SetSimulatePhysics(true);
 	Mesh->SetPhysicsLinearVelocity(Velocity);
 	Mesh->SetPhysicsAngularVelocityInDegrees(FMath::VRand() * Spec.TumbleDegreesPerSecond);
+}
+
+void ACookieLaunchable::EmitFromSpouts()
+{
+	ACookieGameMode* GameMode = GetWorld()->GetAuthGameMode<ACookieGameMode>();
+	if (ACookieSettledManager* Settled = GameMode ? GameMode->GetSettled() : nullptr)
+	{
+		Settled->EmitSpouts(Item, GetActorTransform(), SpoutTickSeconds, SpoutCarry.GetData());
+	}
 }
 
 void ACookieLaunchable::EmitCookie()
