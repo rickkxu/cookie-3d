@@ -6,6 +6,7 @@
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "ProceduralMeshComponent.h"
 
@@ -902,10 +903,29 @@ void ACookieSettledManager::BuildPileCore(FPile& Pile, const FPileShape& Shape)
 			Vertices.Add(FVector(P.X, P.Y, Z > 0.0 ? Z - RimSink : -RimSink - Sink));
 		}
 	}
+	// A heap that reaches the player's house leaves the rooms free: no cookies are laid inside it, and the core
+	// leaves out every triangle that would cut through a room, so there's no invisible slope across the kitchen.
+	const FBox& House = UCookieGameSettings::Get().HouseInterior;
+	auto AddTriangle = [&](int32 A, int32 B, int32 C)
+	{
+		const FVector WA = Shape.Ground + Vertices[A];
+		const FVector WB = Shape.Ground + Vertices[B];
+		const FVector WC = Shape.Ground + Vertices[C];
+		const double MinX = FMath::Min3(WA.X, WB.X, WC.X), MaxX = FMath::Max3(WA.X, WB.X, WC.X);
+		const double MinY = FMath::Min3(WA.Y, WB.Y, WC.Y), MaxY = FMath::Max3(WA.Y, WB.Y, WC.Y);
+		const double MinZ = FMath::Min3(WA.Z, WB.Z, WC.Z);
+		const bool bCutsRoom = MinZ < House.Max.Z
+			&& MaxX > House.Min.X && MinX < House.Max.X
+			&& MaxY > House.Min.Y && MinY < House.Max.Y;
+		if (!bCutsRoom)
+		{
+			Triangles.Append({ A, B, C });
+		}
+	};
 	for (int32 Segment = 0; Segment < Segments; ++Segment)
 	{
 		const int32 Next = (Segment + 1) % Segments;
-		Triangles.Append({ 0, 1 + Next, 1 + Segment });
+		AddTriangle(0, 1 + Next, 1 + Segment);
 	}
 	for (int32 Ring = 1; Ring < Rings; ++Ring)
 	{
@@ -914,8 +934,8 @@ void ACookieSettledManager::BuildPileCore(FPile& Pile, const FPileShape& Shape)
 		for (int32 Segment = 0; Segment < Segments; ++Segment)
 		{
 			const int32 Next = (Segment + 1) % Segments;
-			Triangles.Append({ Inner + Segment, Inner + Next, Outer + Segment });
-			Triangles.Append({ Inner + Next, Outer + Next, Outer + Segment });
+			AddTriangle(Inner + Segment, Inner + Next, Outer + Segment);
+			AddTriangle(Inner + Next, Outer + Next, Outer + Segment);
 		}
 	}
 	Normals.Reserve(Vertices.Num());
@@ -1287,9 +1307,43 @@ void ACookieSettledManager::Tick(float DeltaSeconds)
 		RefreshDirtyPiles();
 	}
 	TickPileBuilds(UCookieGameSettings::Get().PileBuildBudgetMs / 1000.0);
+	KeepPlayerOnTopOfHeaps();
 
 	EmitMs += (Emitted - Start) * 1000.0;
 	PileMs += (FPlatformTime::Seconds() - Emitted) * 1000.0;
+}
+
+void ACookieSettledManager::KeepPlayerOnTopOfHeaps()
+{
+	// Outside the house the player is never inside a heap: if one has grown over them, or they step out of a
+	// buried house (or into the gap a heap leaves round its walls), they come up on its surface.
+	APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (!Player || IsInsideHouse(Player->GetActorLocation()))
+	{
+		return;
+	}
+	const FVector Location = Player->GetActorLocation();
+	const double HalfHeight = Player->GetSimpleCollisionHalfHeight();
+	const double Feet = Location.Z - HalfHeight;
+	double Surface = -UE_DOUBLE_BIG_NUMBER;
+	for (const TUniquePtr<FPile>& Pile : Piles)
+	{
+		const FPileShape Shape = ShapeFor(*Pile);
+		if (!Pile->Core || Shape.Radius <= WalkablePileRadius)
+		{
+			continue;
+		}
+		const FVector2D Local = FVector2D(Location) - FVector2D(Shape.Ground);
+		if (Local.SizeSquared() < FMath::Square(Shape.Radius))
+		{
+			Surface = FMath::Max(Surface, Shape.Ground.Z + Shape.HeightAt(Local));
+		}
+	}
+	// Standing on a heap puts the feet a little under its top cookies; only lift someone well inside it.
+	if (Surface - Feet > 60.0)
+	{
+		Player->SetActorLocation(FVector(Location.X, Location.Y, Surface + HalfHeight + 5.0), false, nullptr, ETeleportType::TeleportPhysics);
+	}
 }
 
 void ACookieSettledManager::ConsumeTimings(double& OutEmitMs, double& OutPileMs)

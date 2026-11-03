@@ -163,6 +163,8 @@ private:
 	void MergeOverlappingPiles();
 	void RefreshDirtyPiles();
 	void TickPileBuilds(double BudgetSeconds);
+	// Lifts the player onto a heap that has them buried (outside the house only).
+	void KeepPlayerOnTopOfHeaps();
 
 	FPileShape ShapeFor(const FPile& Pile) const;
 	double GetPileRadius(int64 Count) const;

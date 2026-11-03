@@ -154,6 +154,26 @@ void ACookieCharacter::CookieStress(int32 ToasterOvens, int32 Grandmas)
 	}
 }
 
+void ACookieCharacter::CookieProbe()
+{
+	const UCapsuleComponent* Capsule = GetCapsuleComponent();
+	const FVector Start = GetActorLocation();
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(CookieProbe), false, this);
+	for (int32 Step = 0; Step < 8; ++Step)
+	{
+		const FVector Direction = FRotator(0.0, Step * 45.0, 0.0).Vector();
+		// Lifted a little so the floor itself doesn't count.
+		const FVector From = Start + FVector(0.0, 0.0, 5.0);
+		FHitResult Hit;
+		const bool bHit = GetWorld()->SweepSingleByChannel(Hit, From, From + Direction * 400.0, FQuat::Identity, ECC_Pawn,
+			FCollisionShape::MakeCapsule(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight() - 5.0), Params);
+		UE_LOG(LogTemp, Display, TEXT("CookieProbe yaw %3d: %s"), Step * 45, bHit
+			? *FString::Printf(TEXT("blocked after %.0f cm by %s / %s at %s"), Hit.Distance,
+				*GetNameSafe(Hit.GetActor()), *GetNameSafe(Hit.GetComponent()), *Hit.ImpactPoint.ToCompactString())
+			: TEXT("clear for 400 cm"));
+	}
+}
+
 void ACookieCharacter::SelectSlot(const FInputActionValue& Value)
 {
 	const int32 Slot = FMath::RoundToInt(Value.Get<float>()) - 1;

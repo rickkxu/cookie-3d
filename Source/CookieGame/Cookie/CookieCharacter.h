@@ -33,6 +33,10 @@ public:
 	UFUNCTION(Exec)
 	void CookieStress(int32 ToasterOvens, int32 Grandmas);
 
+	// Console command: logs whatever blocks the player in each of eight directions (for "I'm stuck" reports).
+	UFUNCTION(Exec)
+	void CookieProbe();
+
 protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void NotifyControllerChanged() override;
