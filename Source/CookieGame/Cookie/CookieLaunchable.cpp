@@ -51,13 +51,17 @@ AActor* ACookieLaunchable::SpawnItem(UWorld* World, ECookieItem Item, const FVec
 
 	const FCookieItemSpec& Spec = UCookieGameSettings::Get().GetItem(Item);
 	ACookieLaunchable* Thing = SpawnLaunched(World, Spec.Launch, Location, Rotation, Velocity);
-	if (Thing)
+	const float Interval = Spec.GetEmitIntervalSeconds();
+	if (Thing && Interval > 0.f)
 	{
 		Thing->Item = Item;
 		// Random first delay so a burst of purchases doesn't emit in lockstep.
-		const float FirstDelay = FMath::FRandRange(0.5f, 1.f) * Spec.EmitIntervalSeconds;
-		World->GetTimerManager().SetTimer(Thing->EmitTimer, Thing, &ACookieLaunchable::EmitCookie,
-			Spec.EmitIntervalSeconds, true, FirstDelay);
+		const float FirstDelay = FMath::FRandRange(0.5f, 1.f) * Interval;
+		World->GetTimerManager().SetTimer(Thing->EmitTimer, Thing, &ACookieLaunchable::EmitCookie, Interval, true, FirstDelay);
+	}
+	else if (Thing)
+	{
+		Thing->Item = Item;
 	}
 	return Thing;
 }
@@ -71,19 +75,25 @@ void ACookieLaunchable::PopCookie(UWorld* World, const FVector& Top)
 		return;
 	}
 
-	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
-	const int32 Flying = GameMode->GetFlyingCookieCount();
-	if (Flying >= Settings.MaxFlyingCookies || Flying + Settled->GetSettledCookieCount() >= Settings.MaxPhysicalCookies)
-	{
-		Settled->AddToPileNear(Top);
-		return;
-	}
+	// The bank only ever grows by cookies you can see: this one.
+	GameMode->AddCookies(1.0);
 
 	// Pop straight up, scattering a little sideways.
+	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
 	const FVector2D Sideways = FMath::RandPointInCircle(Settings.EmitSpreadSpeed);
 	const FVector Velocity(Sideways.X, Sideways.Y, Settings.EmitPopSpeed);
-	const FRotator Rotation(0.f, FMath::FRandRange(0.f, 360.f), 0.f);
-	SpawnCookie(World, Top + FVector::UpVector * 15.0, Rotation, Velocity);
+	const FVector Start = Top + FVector::UpVector * 15.0;
+
+	// A real physics cookie while there's room in the air; past that, one that flies the same arc
+	// without simulating, so a big bakery still visibly pops every cookie without flooding the physics engine.
+	if (GameMode->GetFlyingCookieCount() < Settings.MaxFlyingCookies)
+	{
+		SpawnCookie(World, Start, FRotator(0.f, FMath::FRandRange(0.f, 360.f), 0.f), Velocity);
+	}
+	else
+	{
+		Settled->LaunchGhostCookie(Start, Velocity);
+	}
 }
 
 ACookieLaunchable* ACookieLaunchable::SpawnLaunched(UWorld* World, const FCookieLaunchSpec& Spec, const FVector& Location, const FRotator& Rotation, const FVector& Velocity)

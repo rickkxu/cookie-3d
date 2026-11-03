@@ -35,7 +35,7 @@ void ACookieGameMode::BeginPlay()
 void ACookieGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	Cookies += GetCookiesPerSecond() * DeltaSeconds;
+	// No passive income here: helpers bank each cookie as they pop it out (ACookieLaunchable::PopCookie).
 
 	GrandmaBudgetSeconds += DeltaSeconds;
 	if (GrandmaBudgetSeconds >= 0.5f)
@@ -77,6 +77,12 @@ bool ACookieGameMode::TryBuy(ECookieItem Item)
 	}
 	Cookies -= Cost;
 	++Owned[static_cast<int32>(Item)];
+
+	// What you spend leaves the world too, thinning every heap and scattered cookie a little.
+	if (Settled)
+	{
+		Settled->RemoveCookies(static_cast<int64>(Cost));
+	}
 	return true;
 }
 

@@ -22,7 +22,7 @@ public:
 	double GetCookies() const { return Cookies; }
 	void AddCookies(double Amount) { Cookies += Amount; }
 
-	// Banked production from everything owned, whether or not it's still physically in the world.
+	// Production rate of everything owned. The bank itself grows one popped cookie at a time.
 	double GetCookiesPerSecond() const;
 
 	int32 GetOwned(ECookieItem Item) const { return Owned[static_cast<int32>(Item)]; }

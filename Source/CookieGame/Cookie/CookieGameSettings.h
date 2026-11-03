@@ -113,11 +113,12 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Production")
 	float EmitSpreadSpeed = 150.f;
 
-	// Past this many individual cookies (flying + settled), new cookies grow pile meshes instead.
+	// Past this many loose cookies at rest, newly landing cookies grow pile meshes instead.
 	UPROPERTY(Config, EditAnywhere, Category = "Production", meta = (ClampMin = "0"))
 	int32 MaxPhysicalCookies = 10000;
 
-	// Produced cookies only fly while fewer than this many cookies are in the air; the rest go straight onto piles.
+	// Produced cookies only fly as physics objects while fewer than this many cookies are in the air; the rest fly the
+	// same arc without simulating (ghost cookies) and land the same way.
 	// Keeps a big bakery from flooding the physics engine. The player's own shots always fly.
 	UPROPERTY(Config, EditAnywhere, Category = "Production", meta = (ClampMin = "0"))
 	int32 MaxFlyingCookies = 150;

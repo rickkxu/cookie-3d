@@ -29,23 +29,36 @@ that are drawn entirely from cookie instances (irregular shapes, two layers, lea
 
 ```ini
 [/Script/Engine.RendererSettings]
-r.DynamicGlobalIlluminationMethod=2   ; was 1 (Lumen) - screen-space GI, nearly free
-r.ReflectionMethod=2                  ; was 1 (Lumen) - screen space reflections
+r.DynamicGlobalIlluminationMethod=1   ; Lumen (software, no ray tracing) - bounce light, the biggest step to realism
+r.ReflectionMethod=1                  ; Lumen reflections
 r.Shadow.Virtual.Enable=0             ; was 1 - regular cascaded shadow maps
 
 [SystemSettings]
 r.RayTracing.Enable=0                 ; ray tracing shaders stay compiled (r.RayTracing=True), just switched off
 ```
 
-Without Lumen, `Lvl_House` builds its mood from cheap lights: a warm sky light with a warm lower hemisphere,
-the sun letting 25% of its light through shadows (Shadow Amount 0.75), a weak shadowless `FillLight` from the
-opposite side, and inside, warm shadowless point lights at the lamps in every room (`House/Lights`), each with
-a small radius so it stays roughly in its room. An unbound `PostProcess_Look` volume adds contact shadows
-(ambient occlusion), a slightly warm white balance and a soft vignette.
+Lighting in `Lvl_House`, tuned for Lumen: a neutral sky light at intensity 1.5 with a black lower hemisphere
+(Lumen occludes it indoors, so rooms get darker away from windows), a midday sun (50 degrees up, 5900 K,
+10 lux) with full-strength shadows for a blue daytime sky, default sky atmosphere brightness, light-blue height
+fog (density 0.015; with black fog the horizon turned into a dark band), and inside, point lights at the lamps
+in every room (`House/Lights`, small radius so each stays roughly in its room). It's daytime, so the lamps are
+on but daylight leads: ceiling lights 3-4 cd at ~4200 K (bathroom 4500 K), hall 2.5, floor lamp 2.5, bedside
+lamps 2, porch 1. At evening strength (9-11 cd, warmer) they swamped the daylight and turned rooms orange. No
+lamp casts shadows: with the four ceiling lights shadowed, the render thread hit 60-70 ms (~15 fps with 40
+grandmas, 25 ovens and 10,000 cookies), since each shadowed point light re-renders every nearby cookie six
+times a frame. Off, it was ~28 fps in the same test, and at daytime strength the lamp shadows were faint anyway.
+`FillLight` is kept but at intensity 0. A hidden `CeilingLightBlocker` slab (`House/Roof`, just above the
+ceiling) casts shadows and blocks Lumen light only, so sun and sky can't leak in from the attic. An unbound
+`PostProcess_Look` volume adds contact shadows (ambient occlusion 1.0, radius 120), neutral white balance, +10%
+contrast, exposure compensation -0.3 and a soft vignette; it also selects Lumen for GI and reflections, matching
+the config above. The living room's wall paint (`SideB` on `MI_Wall_Living_Ext` and `MI_Wall_Living_Hall`) is
+a warm tan (0.74, 0.52, 0.32); the earlier terracotta (0.8, 0.4, 0.2) bounced around under Lumen and turned the
+whole room orange.
 
-Measured with the roof on (20 grandmas + 25 toasters): current setup ~56 fps; Lumen ~37 fps (~43 at reduced
-quality). On a faster GPU, set `r.DynamicGlobalIlluminationMethod=1` and `r.ReflectionMethod=1` to try Lumen,
-and dim the point lights, since Lumen adds bounce light on top.
+Performance: measured earlier with the roof on (20 grandmas + 25 toasters), the cheap setup (screen-space GI
+and reflections, shadowless lamps) ran ~56 fps and Lumen ~37 fps (~43 at reduced quality); see
+above for the lamp shadows. To go back to the cheap setup, set both methods above to 2, untick the Global
+Illumination and Reflections overrides in `PostProcess_Look`, and raise the exposure compensation to 0.6.
 
 Careful: changing Global Illumination or Reflections under Project Settings → Rendering in the editor writes
 straight to `Config/DefaultEngine.ini`.
@@ -92,10 +105,17 @@ then run [`scripts/setup-windows.ps1`](scripts/setup-windows.ps1) on it.
   and **Game Default Map** = `/Game/Cookie/Lvl_House`.
 - Open `Lvl_House` (its World Settings already use `CookieGameMode`) and press **Play**.
 
-The house is built from the Low Poly Interior kit's modular pieces on its 2.5 m grid (Outliner folders
-`House/Walls`, `House/Floors`, `House/Furniture`): a 7 × 5 tile house, white walls with window and doorway
-pieces, kit furniture in every room. The yard (`Yard` folder: grass, path, fence) is still flat-colored blocks
-using `Content/Cookie/House/MI_House_*`.
+The house is a 10 × 7.5 m cottage built from the Low Poly Interior kit (Outliner folders `House/Walls`,
+`House/Floors`, `House/Furniture/<Room>`, `House/Doors`, `House/Roof`, `House/Exterior`): kitchen and living
+room on the west, a 1 m hallway from the front door, bedroom and bathroom on the east, all densely furnished.
+Each wall is a single kit piece (no doubled slabs). `M_TwoToneWall` paints each face of a wall its own room's
+color, based on which way the face points (the `MI_Wall_<RoomOnPlusY>_<OtherSide>` instances in
+`Content/Cookie/House/Walls/`). Doors hang fully open against the room side, so every doorway has 85 cm or
+more clear width for the 68 cm player. The yard (`Yard` folder) has noise-shaded grass (`M_Grass`), a
+posts-and-rails fence merged into one mesh, trees, bushes and a mailbox.
+
+Furniture placements are kept as data in `docs/house_furniture.json` (room, label, kit mesh,
+position, yaw, scale), which a Unreal MCP script reads to rebuild `House/Furniture`.
 
 The template's own character, weapon, and pickups go unused. `ACookieCharacter` replaces them.
 

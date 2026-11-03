@@ -15,7 +15,9 @@ ACookieCharacter::ACookieCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	GetCapsuleComponent()->InitCapsuleSize(40.f, 96.f);
+	// 60 cm wide: fits the kit's ~80 cm door openings, the 1 m hallway, and the ~65-75 cm walkways
+	// around the kitchen table with some slack.
+	GetCapsuleComponent()->InitCapsuleSize(30.f, 96.f);
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(GetCapsuleComponent());

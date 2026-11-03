@@ -21,7 +21,7 @@ UCookieGameSettings::UCookieGameSettings()
 	Cookie.Scale = FVector(2.0);
 	Cookie.bPlaceholderMaterial = false;
 	Cookie.Color = FLinearColor(0.8f, 0.6f, 0.32f);  // The kit cookie's dough, for pile cores and the HUD.
-	Cookie.LaunchSpeed = 1100.f;
+	Cookie.LaunchSpeed = 750.f;  // Lands across a ~4 m room instead of slamming into the far wall.
 	Cookie.SpawnDistance = 60.f;
 	Cookie.TumbleDegreesPerSecond = 360.f;
 	Cookie.bUseCCD = true;
@@ -32,12 +32,11 @@ UCookieGameSettings::UCookieGameSettings()
 	ToasterOven.DisplayName = NSLOCTEXT("CookieGame", "ToasterOven", "Toaster Oven");
 	ToasterOven.BaseCost = 15.0;
 	ToasterOven.CookiesPerSecond = 0.5f;
-	ToasterOven.EmitIntervalSeconds = 4.f;
 	ToasterOven.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(ToasterMeshPath));
 	ToasterOven.Launch.Scale = FVector(1.6);
 	ToasterOven.Launch.bPlaceholderMaterial = false;
 	ToasterOven.Launch.Color = FLinearColor(0.6f, 0.6f, 0.65f);
-	ToasterOven.Launch.LaunchSpeed = 900.f;
+	ToasterOven.Launch.LaunchSpeed = 650.f;
 	ToasterOven.Launch.SpawnDistance = 110.f;
 	ToasterOven.Launch.Bounciness = 0.45f;
 
@@ -60,12 +59,11 @@ UCookieGameSettings::UCookieGameSettings()
 	Grandma.DisplayName = NSLOCTEXT("CookieGame", "Grandma", "Grandma");
 	Grandma.BaseCost = 100.0;
 	Grandma.CookiesPerSecond = 2.f;
-	Grandma.EmitIntervalSeconds = 2.5f;
 	Grandma.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(CylinderPath));
 	Grandma.Launch.Scale = FVector(0.4, 0.4, 1.5);
 	Grandma.Launch.Color = FLinearColor(0.7f, 0.55f, 0.85f);
 	Grandma.Launch.bPlaceholderMaterial = false;
-	Grandma.Launch.LaunchSpeed = 900.f;
+	Grandma.Launch.LaunchSpeed = 650.f;
 	Grandma.Launch.SpawnDistance = 130.f;
 	Grandma.Launch.TumbleDegreesPerSecond = 120.f;
 }

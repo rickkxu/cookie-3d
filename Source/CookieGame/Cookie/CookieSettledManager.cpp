@@ -1,5 +1,6 @@
 #include "CookieSettledManager.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "CookieGameMode.h"
 #include "CookieGameSettings.h"
 #include "CookieLaunchable.h"
 #include "Engine/CollisionProfile.h"
@@ -18,6 +19,46 @@ namespace
 
 	// Heaps narrower than this (cm) have no core: a handful of cookies is just cookies.
 	constexpr double MinCoreRadius = 35.0;
+
+	// Splits Amount across pools in proportion to their sizes, so every cookie is equally likely to go.
+	// Largest remainder rounding, so the shares add up to exactly Amount (which must not exceed the total).
+	TArray<int64> SplitProportionally(const TArray<int64>& Pools, int64 Amount)
+	{
+		int64 Total = 0;
+		for (int64 Pool : Pools)
+		{
+			Total += Pool;
+		}
+
+		TArray<int64> Shares;
+		Shares.SetNumZeroed(Pools.Num());
+		if (Total <= 0 || Amount <= 0)
+		{
+			return Shares;
+		}
+
+		TArray<TPair<double, int32>> Remainders;
+		int64 Assigned = 0;
+		for (int32 Index = 0; Index < Pools.Num(); ++Index)
+		{
+			const double Exact = static_cast<double>(Amount) * Pools[Index] / Total;
+			Shares[Index] = FMath::Min(Pools[Index], static_cast<int64>(Exact));
+			Assigned += Shares[Index];
+			// A pinch of noise so ties don't always favour the same pools.
+			Remainders.Emplace(Exact - Shares[Index] + FMath::FRand() * 1e-6, Index);
+		}
+		Remainders.Sort([](const TPair<double, int32>& A, const TPair<double, int32>& B) { return A.Key > B.Key; });
+		for (int32 I = 0; Assigned < Amount && I < Remainders.Num() * 2; ++I)
+		{
+			const int32 Index = Remainders[I % Remainders.Num()].Value;
+			if (Shares[Index] < Pools[Index])
+			{
+				++Shares[Index];
+				++Assigned;
+			}
+		}
+		return Shares;
+	}
 }
 
 ACookieSettledManager::ACookieSettledManager()
@@ -49,11 +90,18 @@ void ACookieSettledManager::BeginPlay()
 	PileInstances = MakeInstances(TEXT("CookiePiles"), PileSpec);
 	PileInstances->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	PileInstances->SetVisibility(false);
+
+	GhostInstances = MakeInstances(TEXT("GhostCookies"), Settings.Cookie);
+	GhostInstances->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// Small, fast and short-lived: a shadow would hardly show, but moving casters cost shadow rendering.
+	GhostInstances->SetCastShadow(false);
 }
 
 UInstancedStaticMeshComponent* ACookieSettledManager::MakeInstances(const TCHAR* Name, const FCookieLaunchSpec& Spec)
 {
-	UInstancedStaticMeshComponent* Instances = NewObject<UInstancedStaticMeshComponent>(this, Name);
+	// Unique names: piles come and go, so "CookiePileSurface3" can be wanted again while an older one still exists.
+	const FName UniqueName = MakeUniqueObjectName(this, UInstancedStaticMeshComponent::StaticClass(), FName(Name));
+	UInstancedStaticMeshComponent* Instances = NewObject<UInstancedStaticMeshComponent>(this, UniqueName);
 	Instances->SetupAttachment(RootComponent);
 	Instances->SetMobility(EComponentMobility::Movable);
 	Instances->SetStaticMesh(Spec.Mesh.LoadSynchronous());
@@ -73,6 +121,13 @@ UInstancedStaticMeshComponent* ACookieSettledManager::MakeInstances(const TCHAR*
 
 void ACookieSettledManager::AddCookie(const FTransform& Transform)
 {
+	// Already spent while it was in the air.
+	if (RemovalDebt > 0)
+	{
+		--RemovalDebt;
+		return;
+	}
+
 	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
 	if (SettledCookieCount >= Settings.MaxPhysicalCookies)
 	{
@@ -173,6 +228,217 @@ void ACookieSettledManager::AddToPileNear(const FVector& Location)
 	Surface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	PileSurfaces.Add(Surface);
 	BuildPileSurface(Piles.Num() - 1);
+}
+
+void ACookieSettledManager::RemoveCookies(int64 Amount)
+{
+	// The pools: all loose cookies, then each pile. Each gives up a share the size of its part of the total.
+	TArray<int64> Pools;
+	Pools.Add(SettledCookieCount);
+	for (const FPile& Pile : Piles)
+	{
+		Pools.Add(Pile.Count);
+	}
+	const int64 FromWorld = FMath::Min(Amount, static_cast<int64>(SettledCookieCount) + PiledCookies);
+	const TArray<int64> Shares = SplitProportionally(Pools, FromWorld);
+
+	RemoveLooseCookies(static_cast<int32>(Shares[0]));
+
+	// Piles shrink by their share (their surface is re-laid lower); emptied ones go away.
+	// Backwards, so removing one doesn't shift those still to visit.
+	for (int32 PileIndex = Piles.Num() - 1; PileIndex >= 0; --PileIndex)
+	{
+		const int32 Take = static_cast<int32>(Shares[1 + PileIndex]);
+		if (Take <= 0)
+		{
+			continue;
+		}
+		FPile& Pile = Piles[PileIndex];
+		Pile.Count -= Take;
+		PiledCookies -= Take;
+		if (Pile.Count <= 0)
+		{
+			RemovePile(PileIndex);
+		}
+		else
+		{
+			Pile.bDirty = true;
+		}
+	}
+
+	// The rest were bought with cookies still in the air: they vanish as they land.
+	const ACookieGameMode* GameMode = GetWorld()->GetAuthGameMode<ACookieGameMode>();
+	const int64 InAir = (GameMode ? GameMode->GetFlyingCookieCount() : 0) + Ghosts.Num();
+	RemovalDebt = FMath::Min(RemovalDebt + (Amount - FromWorld), InAir);
+}
+
+void ACookieSettledManager::RemoveLooseCookies(int32 Count)
+{
+	if (Count <= 0 || !CookieMesh)
+	{
+		return;
+	}
+
+	// Bucket cookies into cookie-sized columns. Within a column the highest cookie is layer 0, the one
+	// under it layer 1, and so on. Removing all the layer 0s (in random order) before any layer 1s
+	// takes cookies off the top everywhere, so nothing is left floating and every spot thins evenly.
+	const double Cell = FMath::Max(CookieMesh->GetBounds().BoxExtent.X * UCookieGameSettings::Get().Cookie.Scale.X, 1.0);
+
+	struct FLoose
+	{
+		int32 Chunk;
+		int32 Index;
+		double Z;
+		int32 Layer = 0;
+		float Shuffle = 0.f;
+	};
+	TArray<FLoose> Loose;
+	Loose.Reserve(SettledCookieCount);
+	TMap<FIntPoint, TArray<int32>> Columns;
+	for (int32 ChunkIndex = 0; ChunkIndex < CookieChunks.Num(); ++ChunkIndex)
+	{
+		const UInstancedStaticMeshComponent* Chunk = CookieChunks[ChunkIndex];
+		for (int32 Index = 0; Index < Chunk->GetInstanceCount(); ++Index)
+		{
+			FTransform Transform;
+			Chunk->GetInstanceTransform(Index, Transform, /*bWorldSpace=*/ true);
+			const FVector Location = Transform.GetLocation();
+			const FIntPoint Column(FMath::FloorToInt32(Location.X / Cell), FMath::FloorToInt32(Location.Y / Cell));
+			Columns.FindOrAdd(Column).Add(Loose.Num());
+			Loose.Add({ ChunkIndex, Index, Location.Z, 0, FMath::FRand() });
+		}
+	}
+	for (TPair<FIntPoint, TArray<int32>>& Column : Columns)
+	{
+		Column.Value.Sort([&Loose](int32 A, int32 B) { return Loose[A].Z > Loose[B].Z; });
+		for (int32 Layer = 0; Layer < Column.Value.Num(); ++Layer)
+		{
+			Loose[Column.Value[Layer]].Layer = Layer;
+		}
+	}
+	Loose.Sort([](const FLoose& A, const FLoose& B) { return A.Layer != B.Layer ? A.Layer < B.Layer : A.Shuffle < B.Shuffle; });
+
+	TArray<TArray<int32>> PerChunk;
+	PerChunk.SetNum(CookieChunks.Num());
+	for (int32 I = 0; I < FMath::Min(Count, Loose.Num()); ++I)
+	{
+		PerChunk[Loose[I].Chunk].Add(Loose[I].Index);
+	}
+	for (int32 ChunkIndex = 0; ChunkIndex < CookieChunks.Num(); ++ChunkIndex)
+	{
+		if (!PerChunk[ChunkIndex].IsEmpty())
+		{
+			CookieChunks[ChunkIndex]->RemoveInstances(PerChunk[ChunkIndex]);
+			SettledCookieCount -= PerChunk[ChunkIndex].Num();
+		}
+	}
+}
+
+void ACookieSettledManager::LaunchGhostCookie(const FVector& Start, const FVector& Velocity)
+{
+	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
+	const double GravityZ = GetWorld()->GetGravityZ();
+	auto PositionAt = [&](double T) { return Start + Velocity * T + FVector(0.0, 0.0, 0.5 * GravityZ * T * T); };
+
+	FGhost& Ghost = Ghosts.AddDefaulted_GetRef();
+	Ghost.Start = Start;
+	Ghost.Velocity = Velocity;
+	Ghost.Spin0 = FRotator(0.f, FMath::FRandRange(0.f, 360.f), 0.f).Quaternion();
+	Ghost.SpinAxis = FMath::VRand();
+	Ghost.SpinSpeed = FMath::DegreesToRadians(Settings.Cookie.TumbleDegreesPerSecond);
+
+	// Work out once where the arc meets the house or anything settled, so flying costs nothing but a transform update.
+	const double Thickness = CookieMesh ? CookieMesh->GetBounds().BoxExtent.Z * Settings.Cookie.Scale.Z : 2.0;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(CookieGhostArc), false);
+	const FCollisionObjectQueryParams Static(ECC_WorldStatic);
+	constexpr double Step = 1.0 / 30.0;
+	constexpr double MaxSeconds = 5.0;
+	FVector Previous = Start;
+	for (double T = Step; T <= MaxSeconds; T += Step)
+	{
+		const FVector Next = PositionAt(T);
+		FHitResult Hit;
+		if (GetWorld()->LineTraceSingleByObjectType(Hit, Previous, Next, Static, Params))
+		{
+			Ghost.LandTime = T - Step + Step * Hit.Time;
+			const FRotator Rotation = FRotationMatrix::MakeFromZX(Hit.ImpactNormal, FMath::VRand()).Rotator();
+			Ghost.Landing = FTransform(Rotation, Hit.ImpactPoint + Hit.ImpactNormal * Thickness, Settings.Cookie.Scale);
+			return;
+		}
+		Previous = Next;
+	}
+	// Fell out of the world: it lands wherever it got to.
+	Ghost.LandTime = MaxSeconds;
+	Ghost.Landing = FTransform(Ghost.Spin0, Previous, Settings.Cookie.Scale);
+}
+
+void ACookieSettledManager::TickGhosts(float DeltaSeconds)
+{
+	if (Ghosts.IsEmpty() && GhostSlotsInUse == 0)
+	{
+		return;
+	}
+
+	TArray<FTransform> Landed;
+	for (int32 Index = Ghosts.Num() - 1; Index >= 0; --Index)
+	{
+		FGhost& Ghost = Ghosts[Index];
+		Ghost.Age += DeltaSeconds;
+		if (Ghost.Age >= Ghost.LandTime)
+		{
+			Landed.Add(Ghost.Landing);
+			Ghosts.RemoveAtSwap(Index);
+		}
+	}
+
+	const double GravityZ = GetWorld()->GetGravityZ();
+	const FVector Scale = UCookieGameSettings::Get().Cookie.Scale;
+	// The instances are a pool that only ever grows: each frame just moves them. Adding or removing
+	// instances rebuilds the component's render data, which cost the render thread tens of milliseconds
+	// a frame with cookies landing and launching constantly. Slots past the live ghosts are shrunk away.
+	const int32 Slots = FMath::Max(Ghosts.Num(), GhostSlotsInUse);
+	if (Slots > GhostInstances->GetInstanceCount())
+	{
+		TArray<FTransform> Spare;
+		Spare.Init(FTransform(FQuat::Identity, FVector::ZeroVector, FVector::ZeroVector), Slots - GhostInstances->GetInstanceCount() + 32);
+		GhostInstances->AddInstances(Spare, /*bShouldReturnIndices=*/ false, /*bWorldSpace=*/ true);
+	}
+
+	TArray<FTransform> Transforms;
+	Transforms.Reserve(Slots);
+	for (const FGhost& Ghost : Ghosts)
+	{
+		const double T = Ghost.Age;
+		const FVector Location = Ghost.Start + Ghost.Velocity * T + FVector(0.0, 0.0, 0.5 * GravityZ * T * T);
+		// Tumbles in flight, easing into the way it will lie just before it lands.
+		const FQuat Tumble = FQuat(Ghost.SpinAxis, Ghost.SpinSpeed * T) * Ghost.Spin0;
+		const double Settle = FMath::SmoothStep(0.0, 1.0, (T - (Ghost.LandTime - 0.15)) / 0.15);
+		Transforms.Emplace(FQuat::Slerp(Tumble, Ghost.Landing.GetRotation(), Settle), Location, Scale);
+	}
+
+	while (Transforms.Num() < Slots)
+	{
+		Transforms.Emplace(FQuat::Identity, FVector::ZeroVector, FVector::ZeroVector);
+	}
+	if (Slots > 0)
+	{
+		GhostInstances->BatchUpdateInstancesTransforms(0, Transforms, /*bWorldSpace=*/ true, /*bMarkRenderStateDirty=*/ true, /*bTeleport=*/ true);
+	}
+	GhostSlotsInUse = Ghosts.Num();
+
+	for (const FTransform& Landing : Landed)
+	{
+		AddCookie(Landing);
+	}
+}
+
+void ACookieSettledManager::RemovePile(int32 Index)
+{
+	// Removing an instance keeps the rest in order, so pile i still matches instance i.
+	PileInstances->RemoveInstance(Index);
+	PileSurfaces[Index]->DestroyComponent();
+	PileSurfaces.RemoveAt(Index);
+	Piles.RemoveAt(Index);
 }
 
 FVector ACookieSettledManager::FindPileGround(const FVector& Source, const FVector& Target) const
@@ -394,9 +660,10 @@ void ACookieSettledManager::RefreshDirtyPiles()
 		PileInstances->UpdateInstanceTransform(Index, GetPileCoreTransform(Pile), /*bWorldSpace=*/ true, /*bMarkRenderStateDirty=*/ true);
 
 		// Re-lay the surface only once the heap has grown noticeably, so it settles in steps rather than crawling.
-		// Small heaps re-lay every time: each new cookie is visible there.
+		// Shrinking re-lays sooner, so spending visibly eats into the top of the heap.
+		// Small heaps re-lay every time: each cookie is visible there.
 		const double Radius = GetPileRadius(Pile);
-		if (Pile.Count <= 30 || Radius > Pile.BuiltRadius * 1.08)
+		if (Pile.Count <= 30 || Radius > Pile.BuiltRadius * 1.08 || Radius < Pile.BuiltRadius * 0.98)
 		{
 			BuildPileSurface(Index);
 		}
@@ -409,6 +676,7 @@ void ACookieSettledManager::Tick(float DeltaSeconds)
 	const double Start = FPlatformTime::Seconds();
 
 	EmitFromSettledItems(DeltaSeconds);
+	TickGhosts(DeltaSeconds);
 	const double Emitted = FPlatformTime::Seconds();
 
 	// Resizing a pile rebuilds its collision, so batch growth a few times a second.
@@ -433,7 +701,7 @@ void ACookieSettledManager::ConsumeTimings(double& OutEmitMs, double& OutPileMs)
 
 void ACookieSettledManager::EmitFromSettledItems(float DeltaSeconds)
 {
-	// N settled items that each emit every I seconds emit N / I cookies per second in total.
+	// N settled items that each make R cookies a second pop N * R cookies a second in total.
 	// Pick random instances to pop them from instead of keeping a timer per instance.
 	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
 	for (ECookieItem Item : TEnumRange<ECookieItem>())
@@ -446,7 +714,7 @@ void ACookieSettledManager::EmitFromSettledItems(float DeltaSeconds)
 			continue;
 		}
 
-		EmitAccumulators[Index] += Count / Settings.GetItem(Item).EmitIntervalSeconds * DeltaSeconds;
+		EmitAccumulators[Index] += Count * Settings.GetItem(Item).CookiesPerSecond * DeltaSeconds;
 		const FBox MeshBox = Instances->GetStaticMesh()->GetBounds().GetBox();
 		while (EmitAccumulators[Index] >= 1.f)
 		{
