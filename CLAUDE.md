@@ -93,7 +93,7 @@ The game will run on a rented cloud GPU, so stay efficient:
 9. Neighborhood: street of house shells around the player's house.
 10. Cookie tree, bakery and factory: hotbar slots 3–5, spouts that spew streams of cookies.
 11. Mountains: uncapped, merging outdoor heaps whose surface is all real cookies, with walkable cores.
-12. Demo setup: items placed from the start (settings `DemoPlacements`) for filming mountains.
+12. Demo Mode: one setting (`bDemoMode`) starts play in a ready-made scene of mountains and spewing producers for filming.
 
 After each step, the game should be playable. Keep logic simple and readable; favor whatever approach works most reliably through the Unreal MCP.
 

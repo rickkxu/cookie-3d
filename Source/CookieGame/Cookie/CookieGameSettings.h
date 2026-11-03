@@ -235,21 +235,26 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Stress Test", meta = (ClampMin = "0"))
 	int32 StressTestFactories = 0;
 
-	// Items already standing (and producing) when play starts, for filming and testing. Each counts as owned.
-	UPROPERTY(Config, EditAnywhere, Category = "Stress Test")
+	// Demo Mode: play starts in the ready-made demo scene below (mountains, producers already spewing, faster
+	// production) for filming. Off is the normal game. Nothing below applies while it's off.
+	UPROPERTY(Config, EditAnywhere, Category = "Demo")
+	bool bDemoMode = false;
+
+	// Items already standing (and producing) when play starts. Each counts as owned.
+	UPROPERTY(Config, EditAnywhere, Category = "Demo", meta = (EditCondition = "bDemoMode"))
 	TArray<FCookieDemoPlacement> DemoPlacements;
 
-	// Heaps already there when play starts, for filming and testing. Their cookies are in the bank.
-	UPROPERTY(Config, EditAnywhere, Category = "Stress Test")
+	// Heaps already there when play starts. Their cookies are in the bank.
+	UPROPERTY(Config, EditAnywhere, Category = "Demo", meta = (EditCondition = "bDemoMode"))
 	TArray<FCookieDemoHeap> DemoHeaps;
 
 	// Speeds up everything's production (for filming mountains growing). The bank still only counts cookies
 	// that physically came out, and the HUD's per-second figure includes it.
-	UPROPERTY(Config, EditAnywhere, Category = "Stress Test", meta = (ClampMin = "0.0"))
-	float DemoProductionMultiplier = 1.f;
+	UPROPERTY(Config, EditAnywhere, Category = "Demo", meta = (ClampMin = "0.0", EditCondition = "bDemoMode"))
+	float DemoProductionMultiplier = 3.f;
 
-	// Cookies per second one of this item makes, including the demo multiplier.
-	float GetProduction(ECookieItem Item) const { return GetItem(Item).CookiesPerSecond * DemoProductionMultiplier; }
+	// Cookies per second one of this item makes, including the demo multiplier in Demo Mode.
+	float GetProduction(ECookieItem Item) const { return GetItem(Item).CookiesPerSecond * (bDemoMode ? DemoProductionMultiplier : 1.f); }
 
 	// How many stress test items drop every 0.05 s.
 	UPROPERTY(Config, EditAnywhere, Category = "Stress Test", meta = (ClampMin = "1"))

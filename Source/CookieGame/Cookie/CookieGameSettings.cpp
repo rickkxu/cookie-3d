@@ -124,6 +124,34 @@ UCookieGameSettings::UCookieGameSettings()
 	Factory.Spouts.Add(Spout(FVector(1590, -200, 150), FVector(10, 40, 5), FVector(2150, -200, 0), 350.f, 0.8f, 0.24f, 40.f));
 
 	PileCoreMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Cookie/Items/MI_Item_Dough.MI_Item_Dough")));
+
+	// The demo scene (used only with Demo Mode on): factories in the park and up the street, bakeries at both
+	// ends, cookie trees in the front yard, and three mountains, one either side of the house and a giant in the park.
+	auto Place = [this](ECookieItem Item, double X, double Y, float Yaw)
+	{
+		FCookieDemoPlacement Placement;
+		Placement.Item = Item;
+		Placement.Location = FVector(X, Y, 0.0);
+		Placement.Yaw = Yaw;
+		DemoPlacements.Add(Placement);
+	};
+	Place(ECookieItem::Factory, 12500, -1650, 0.f);
+	Place(ECookieItem::Factory, 15500, -4600, 30.f);
+	Place(ECookieItem::Factory, -4500, 2600, 180.f);
+	Place(ECookieItem::Bakery, 9600, 1200, 200.f);
+	Place(ECookieItem::Bakery, -6800, -1650, 90.f);
+	Place(ECookieItem::CookieTree, -300, -700, 0.f);
+	Place(ECookieItem::CookieTree, 1500, -800, 70.f);
+	auto Heap = [this](double X, double Y, int64 Cookies)
+	{
+		FCookieDemoHeap DemoHeap;
+		DemoHeap.Location = FVector(X, Y, 0.0);
+		DemoHeap.Cookies = Cookies;
+		DemoHeaps.Add(DemoHeap);
+	};
+	Heap(2700, -1650, 6000000);
+	Heap(-2700, 2200, 4000000);
+	Heap(14500, 1500, 10000000);
 }
 
 const FCookieItemSpec& UCookieGameSettings::GetItem(ECookieItem Item) const

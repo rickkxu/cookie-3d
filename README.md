@@ -19,7 +19,7 @@ The full design spec is in [`CLAUDE.md`](CLAUDE.md).
 | 9. Neighborhood: 12-house street around the player's house | Done, verified in screenshots (not walked in a play session yet) |
 | 10. Cookie tree, bakery, cookie factory (hotbar 3–5) with cookie spouts | Done; thrown via the stress test, they fly, settle and spew |
 | 11. Cookie mountains: uncapped, merging outdoor heaps, all-cookie surface, climbable | Done; a 6M-cookie heap stands 16 m tall and holds the player |
-| 12. Demo settings for filming (placed items, starting heaps, production multiplier) | Done |
+| 12. Demo Mode for filming (one toggle: mountains, producers, faster production) | Done |
 
 Mountain performance (standalone, 1280×720, Tesla T4, a 6-million-cookie mountain in the street with ~450,000
 real cookies on its surface, plus 3 factories, a bakery and a cookie tree spewing): **~46–51 fps** with the
@@ -171,24 +171,18 @@ Indoor heaps (inside the player's house) stay capped at 3,000 cookies each and s
 
 ### Filming the mountain demo
 
-**Project Settings → Game → Cookie Game → Stress Test** has three settings for setting up shots (all off by default):
+Tick **Project Settings → Game → Cookie Game → Demo → Demo Mode** and press Play: the street starts with three
+cookie mountains (6M by the house, 4M behind it, 10M in the park, about 20M cookies in the bank), three factories,
+two bakeries and two cookie trees already spewing, at 3× production. Untick it for the normal game. 47 fps on the T4.
+
+The scene itself is editable under the same heading (only used while Demo Mode is on):
 
 - **Demo Placements**: items standing from the start, already producing (each counts as owned).
-- **Demo Heaps**: heaps already there at start (in the bank too). One of 6,000,000 at (2700, -1650, 0) towers over
-  the middle of the street.
-- **Demo Production Multiplier**: speeds up all production, e.g. 10 to watch mountains grow in minutes.
+- **Demo Heaps**: heaps already there at start (in the bank too).
+- **Demo Production Multiplier**: speeds up all production (3 by default), e.g. 10 to watch mountains grow in minutes.
 
-They're saved to `Config/DefaultGame.ini`, so clear them again afterwards. For example:
-
-```ini
-[/Script/CookieGame.CookieGameSettings]
-+DemoPlacements=(Item=Factory,Location=(X=12500,Y=-1650,Z=0),Yaw=0)
-+DemoPlacements=(Item=Factory,Location=(X=15500,Y=-4200,Z=0),Yaw=30)
-+DemoPlacements=(Item=Bakery,Location=(X=9600,Y=1200,Z=0),Yaw=200)
-+DemoHeaps=(Location=(X=2700,Y=-1650,Z=0),Cookies=6000000)
-DemoProductionMultiplier=5
-```
-
+The built-in scene is set in `UCookieGameSettings`'s constructor. Editing the lists in Project Settings saves your
+version to `Config/DefaultGame.ini`; delete the `Demo...` lines there to go back to the built-in one.
 Big heaps take a few seconds to lay out their cookies when play starts. In a standalone run,
 `-ExecCmds="EnableCheats, BugItGo -3800 -1650 300 6 0 0, Walk"` puts the camera on the road looking at that mountain.
 

@@ -36,6 +36,11 @@ void ACookieGameMode::BeginPlay()
 
 void ACookieGameMode::PlaceDemoItems()
 {
+	if (!UCookieGameSettings::Get().bDemoMode)
+	{
+		return;
+	}
+
 	// Items standing from the start: dropped straight onto the ground under each spot, already settled.
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(CookieDemoPlacement), false);
 	Params.AddIgnoredActor(Settled);
