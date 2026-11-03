@@ -86,8 +86,14 @@ void ACookieCharacter::NotifyControllerChanged()
 	Super::NotifyControllerChanged();
 
 	CreateInputObjects();
-	if (const APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
+		// The mouse belongs to the game: no cursor, locked to the viewport, so the crosshair is always where you aim.
+		PlayerController->bShowMouseCursor = false;
+		FInputModeGameOnly InputMode;
+		InputMode.SetConsumeCaptureMouseDown(false);
+		PlayerController->SetInputMode(InputMode);
+
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
 				ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
