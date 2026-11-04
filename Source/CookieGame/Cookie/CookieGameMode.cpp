@@ -58,6 +58,12 @@ void ACookieGameMode::PlaceDemoItems()
 		{
 			Location.Z -= 9.0;
 		}
+		// Clouds hover up in the sky over the spot.
+		const FCookieLaunchSpec& Launch = UCookieGameSettings::Get().GetItem(Placement.Item).Launch;
+		if (Launch.bFloats)
+		{
+			Location.Z += Launch.FloatHeight;
+		}
 		++Owned[static_cast<int32>(Placement.Item)];
 		Settled->AddItem(Placement.Item, FTransform(FRotator(0.f, Placement.Yaw, 0.f), Location));
 	}

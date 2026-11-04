@@ -159,6 +159,10 @@ a tapered limb, and a drooping pine tier, composed into `SM_Tree_Round` and `SM_
 | Cookie tree | 1,500 | 15 | `SM_CookieTree`: the round tree with cookies on its canopy | Drop out of the canopy onto a heap round the trunk |
 | Bakery | 25,000 | 120 | `SM_BakeryShop`: pink shopfront with display windows, scalloped striped awning, big cookie sign (the game's cookie), Dutch-gable false front, chocolate roof with icing drips | Tumble out of the front door onto a heap in front of it |
 | Cookie factory | 400,000 | 1,000 | `SM_CookieFactory`: brick hall, sawtooth glass roof, smokestacks, a 9 m game cookie standing on the roof as its sign, a massive yellow launch chute | Launched out of the chute ~29 m into the air, landing on a mountain ~50 m away |
+| Cookie cloud | 6,000,000 | 8,000 | `SM_CookieCloud`: faceted white puffs with a flat base, 37 game cookies studded over the top, sides and underside, glowing `M_CookieCloud` so the underside stays white | Rains from all across the underside onto a heap below |
+
+Bought clouds don't land: they glide ~35 m ahead and hover ~30 m above whatever is underneath (`bFloats`,
+`FloatDistance`, `FloatHeight`), then stay there. The cloud shell comes from the same generator script.
 
 The models are merged meshes built in the editor from kit pieces, engine shapes and the foliage pieces, with convex
 collision so they can be thrown. Each item's **Spouts** (in its settings) say where cookies leave, where they land, how
@@ -198,7 +202,7 @@ The template's own character, weapon, and pickups go unused. `ACookieCharacter` 
 |---|---|
 | WASD + mouse, Space | Move, look, jump |
 | Left-click | Shoot a cookie (+1) |
-| Scroll wheel / 1–9 | Select hotbar slot (1 Toaster Oven, 2 Grandma, 3 Cookie Tree, 4 Bakery, 5 Cookie Factory) |
+| Scroll wheel / 1–9 | Select hotbar slot (1 Toaster Oven, 2 Grandma, 3 Cookie Tree, 4 Bakery, 5 Cookie Factory, 6 Cookie Cloud) |
 | Hold right-click | Rapid-fire buy the selected item (cost ×1.15 per purchase) |
 
 To test buying quickly, set **Project Settings → Game → Cookie Game → Starting Cookies** to e.g. 10000.

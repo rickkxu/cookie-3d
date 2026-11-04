@@ -46,6 +46,10 @@ private:
 	// Runs a few times a second. Freezes this into an instance once it has been still long enough.
 	void CheckSettled();
 
+	// Floating items (clouds): glide up to a spot in the sky ahead of the player, then settle there.
+	void StartFloating(const FCookieLaunchSpec& Spec, const FVector& Velocity);
+	void TickFloat();
+
 	// A cookie that came to rest on a grandma is pushed off her instead of freezing there. True if it was.
 	bool ShoveOffGrandma(const class ACookieSettledManager* Settled);
 
@@ -61,5 +65,11 @@ private:
 	float StillSeconds = 0.f;
 	float FlyingSeconds = 0.f;
 	int32 GrandmaShoves = 0;
+
+	FTimerHandle FloatTimer;
+	FVector FloatFrom = FVector::ZeroVector;
+	FVector FloatTo = FVector::ZeroVector;
+	float FloatElapsed = 0.f;
+	float FloatDuration = 1.f;
 	static constexpr int32 MaxGrandmaShoves = 6;
 };

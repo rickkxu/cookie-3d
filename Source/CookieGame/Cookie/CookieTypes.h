@@ -14,6 +14,7 @@ enum class ECookieItem : uint8
 	CookieTree,
 	Bakery,
 	Factory,
+	CookieCloud,
 	Count UMETA(Hidden)
 };
 ENUM_RANGE_BY_COUNT(ECookieItem, ECookieItem::Count);
@@ -79,6 +80,20 @@ struct FCookieLaunchSpec
 	// Which way the model's front points in its own space, as a yaw in degrees (-90 = -Y, the kit's front).
 	UPROPERTY(EditAnywhere, Category = "Launch", meta = (EditCondition = "bFaceThrower"))
 	float FrontYaw = -90.f;
+
+	// Flies up into the sky and hovers there instead of falling (clouds): no physics, it glides to a spot
+	// FloatDistance ahead of the player, FloatHeight above whatever is below, over FloatSeconds.
+	UPROPERTY(EditAnywhere, Category = "Launch")
+	bool bFloats = false;
+
+	UPROPERTY(EditAnywhere, Category = "Launch", meta = (EditCondition = "bFloats"))
+	float FloatHeight = 3000.f;
+
+	UPROPERTY(EditAnywhere, Category = "Launch", meta = (EditCondition = "bFloats"))
+	float FloatDistance = 3500.f;
+
+	UPROPERTY(EditAnywhere, Category = "Launch", meta = (EditCondition = "bFloats", ClampMin = "0.1"))
+	float FloatSeconds = 2.5f;
 };
 
 // Where a big producer spews its cookies: out of Start (a chimney, a smokestack, a canopy), arcing onto a heap

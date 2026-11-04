@@ -125,7 +125,14 @@ ACookieLaunchable* ACookieLaunchable::SpawnLaunched(UWorld* World, const FCookie
 	if (Thing)
 	{
 		Thing->Launch(Spec, Velocity);
-		World->GetTimerManager().SetTimer(Thing->SettleTimer, Thing, &ACookieLaunchable::CheckSettled, SettleCheckSeconds, true);
+		if (Spec.bFloats)
+		{
+			Thing->StartFloating(Spec, Velocity);
+		}
+		else
+		{
+			World->GetTimerManager().SetTimer(Thing->SettleTimer, Thing, &ACookieLaunchable::CheckSettled, SettleCheckSeconds, true);
+		}
 	}
 	return Thing;
 }
@@ -162,6 +169,14 @@ void ACookieLaunchable::Launch(const FCookieLaunchSpec& Spec, const FVector& Vel
 			Surface->FrictionCombineMode = EFrictionCombineMode::Max;
 		}
 		Mesh->SetPhysMaterialOverride(Surface);
+	}
+
+	if (Spec.bFloats)
+	{
+		// No physics at all: it glides (StartFloating) and passes through things on its way up.
+		SetActorRotation(FRotator(0.f, GetActorRotation().Yaw, 0.f));
+		Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		return;
 	}
 
 	Mesh->SetAngularDamping(Spec.AngularDamping);
@@ -237,6 +252,65 @@ void ACookieLaunchable::CheckSettled()
 		{
 			Settled->AddItem(Item, GetActorTransform());
 		}
+	}
+	Destroy();
+}
+
+void ACookieLaunchable::StartFloating(const FCookieLaunchSpec& Spec, const FVector& Velocity)
+{
+	// Where it's headed: ahead of the player (the way it was thrown), a little scattered so several don't stack,
+	// FloatHeight above whatever is below (ground, roof or mountain).
+	FVector Direction = Velocity.GetSafeNormal2D();
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetActorForwardVector().GetSafeNormal2D();
+	}
+	const FVector2D Scatter = FMath::RandPointInCircle(900.f);
+	FVector Target = GetActorLocation() + Direction * Spec.FloatDistance + FVector(Scatter.X, Scatter.Y, 0.0);
+
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(CookieFloatGround), false, this);
+	// Not on top of other clouds (or anything else settled): over the world itself.
+	if (const ACookieGameMode* GameMode = GetWorld()->GetAuthGameMode<ACookieGameMode>())
+	{
+		Params.AddIgnoredActor(GameMode->GetSettled());
+	}
+	FHitResult Hit;
+	const FVector Above(Target.X, Target.Y, Target.Z + 100000.0);
+	double Ground = GetActorLocation().Z - 200.0;
+	if (GetWorld()->LineTraceSingleByObjectType(Hit, Above, Above - FVector(0.0, 0.0, 200000.0), FCollisionObjectQueryParams(ECC_WorldStatic), Params))
+	{
+		Ground = Hit.ImpactPoint.Z;
+	}
+	Target.Z = Ground + Spec.FloatHeight + FMath::FRandRange(-300.f, 300.f);
+
+	FloatFrom = GetActorLocation();
+	FloatTo = Target;
+	FloatElapsed = 0.f;
+	FloatDuration = Spec.FloatSeconds;
+	GetWorldTimerManager().SetTimer(FloatTimer, this, &ACookieLaunchable::TickFloat, 1.f / 60.f, true);
+}
+
+void ACookieLaunchable::TickFloat()
+{
+	FloatElapsed += 1.f / 60.f;
+	const float T = FMath::Clamp(FloatElapsed / FloatDuration, 0.f, 1.f);
+	// Sideways it eases out; upwards it overshoots a touch and bobs back, like something light catching the air.
+	const float Across = 1.f - FMath::Pow(1.f - T, 3.f);
+	const float C1 = 1.4f;
+	const float Up = 1.f + (C1 + 1.f) * FMath::Pow(T - 1.f, 3.f) + C1 * FMath::Pow(T - 1.f, 2.f);
+	FVector Location = FMath::Lerp(FloatFrom, FloatTo, Across);
+	Location.Z = FMath::Lerp(FloatFrom.Z, FloatTo.Z, Up);
+	SetActorLocation(Location);
+
+	if (T < 1.f)
+	{
+		return;
+	}
+	GetWorldTimerManager().ClearTimer(FloatTimer);
+	ACookieGameMode* GameMode = GetWorld()->GetAuthGameMode<ACookieGameMode>();
+	if (ACookieSettledManager* Settled = GameMode ? GameMode->GetSettled() : nullptr)
+	{
+		Settled->AddItem(Item, GetActorTransform());
 	}
 	Destroy();
 }

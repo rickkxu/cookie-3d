@@ -54,6 +54,9 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Items")
 	FCookieItemSpec Factory;
 
+	UPROPERTY(Config, EditAnywhere, Category = "Items")
+	FCookieItemSpec CookieCloud;
+
 	// Grandmas are ragdolls, so they use a skeletal mesh instead of Grandma.Launch.Mesh.
 	// Must use the UE5 mannequin skeleton: the bone names and animations below depend on it.
 	UPROPERTY(Config, EditAnywhere, Category = "Grandma Body")

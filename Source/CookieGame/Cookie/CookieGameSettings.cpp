@@ -127,6 +127,23 @@ UCookieGameSettings::UCookieGameSettings()
 	Factory.Launch.bFaceThrower = true;
 	Factory.Spouts.Add(Spout(FVector(1533, 0, 1764), FVector(40, 40, 40), FVector(5200, 0, 0), 900.f, 3.9f, 1.f, 150.f));
 
+	// Cookie cloud: the tier after the factory (x15 cost, x8 production). A faceted cloud studded with cookies that flies
+	// up into the sky and stays there, raining cookies from all over its underside onto a mountain below.
+	CookieCloud.DisplayName = NSLOCTEXT("CookieGame", "CookieCloud", "Cookie Cloud");
+	CookieCloud.BaseCost = 6000000.0;
+	CookieCloud.CookiesPerSecond = 8000.f;
+	CookieCloud.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Cookie/Items/SM_CookieCloud.SM_CookieCloud")));
+	CookieCloud.Launch.bPlaceholderMaterial = false;
+	CookieCloud.Launch.Color = FLinearColor(0.93f, 0.95f, 1.f);
+	CookieCloud.Launch.SpawnDistance = 1600.f;
+	CookieCloud.Launch.TumbleDegreesPerSecond = 0.f;
+	CookieCloud.Launch.bFloats = true;
+	CookieCloud.Launch.FloatHeight = 3000.f;
+	CookieCloud.Launch.FloatDistance = 3500.f;
+	CookieCloud.Launch.FloatSeconds = 2.5f;
+	// Its pivot is the middle of its flat underside; the rain leaves from anywhere across it (24 x 12 m).
+	CookieCloud.Spouts.Add(Spout(FVector(0, 0, -20), FVector(1000, 480, 0), FVector(0, 0, 0), 1300.f, 2.4f, 1.f, 160.f));
+
 	PileCoreMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Cookie/Items/MI_Item_Dough.MI_Item_Dough")));
 
 	// The demo scene (used only with Demo Mode on): factories in the park and up the street, bakeries at both
@@ -167,6 +184,7 @@ const FCookieItemSpec& UCookieGameSettings::GetItem(ECookieItem Item) const
 	case ECookieItem::CookieTree:  return CookieTree;
 	case ECookieItem::Bakery:      return Bakery;
 	case ECookieItem::Factory:     return Factory;
+	case ECookieItem::CookieCloud: return CookieCloud;
 	default:                       return Grandma;
 	}
 }
