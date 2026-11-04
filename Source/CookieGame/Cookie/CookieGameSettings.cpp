@@ -105,7 +105,10 @@ UCookieGameSettings::UCookieGameSettings()
 	Bakery.Launch.Color = FLinearColor(0.86f, 0.56f, 0.52f);
 	Bakery.Launch.LaunchSpeed = 550.f;
 	Bakery.Launch.SpawnDistance = 1000.f;
-	Bakery.Launch.TumbleDegreesPerSecond = 25.f;
+	// Lands upright with its shopfront toward you.
+	Bakery.Launch.TumbleDegreesPerSecond = 0.f;
+	Bakery.Launch.bStayUpright = true;
+	Bakery.Launch.bFaceThrower = true;
 	Bakery.Spouts.Add(Spout(FVector(0, -360, 110), FVector(35, 5, 60), FVector(0, -1050, 0), 330.f, 1.1f, 1.f, 40.f));
 
 	// Cookie factory: bigger than the house, with a humongous cookie on the roof for a sign. A massive chute on its
@@ -118,7 +121,10 @@ UCookieGameSettings::UCookieGameSettings()
 	Factory.Launch.Color = FLinearColor(0.42f, 0.13f, 0.07f);
 	Factory.Launch.LaunchSpeed = 450.f;
 	Factory.Launch.SpawnDistance = 1900.f;
-	Factory.Launch.TumbleDegreesPerSecond = 10.f;
+	// Lands upright with its front (loading door, cookie sign) toward you.
+	Factory.Launch.TumbleDegreesPerSecond = 0.f;
+	Factory.Launch.bStayUpright = true;
+	Factory.Launch.bFaceThrower = true;
 	Factory.Spouts.Add(Spout(FVector(1533, 0, 1764), FVector(40, 40, 40), FVector(5200, 0, 0), 900.f, 3.9f, 1.f, 150.f));
 
 	PileCoreMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Cookie/Items/MI_Item_Dough.MI_Item_Dough")));

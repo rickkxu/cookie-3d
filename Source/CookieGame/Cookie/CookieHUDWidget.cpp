@@ -19,16 +19,17 @@ namespace CookieHUDStyle
 	constexpr float CounterTop = 14.f;
 	constexpr float CounterSize = 84.f;
 	constexpr float CounterCookie = 100.f;
+	constexpr float CounterGap = 22.f;
 	constexpr float PillHeight = 42.f;
 	constexpr float PillTextSize = 27.f;
-	constexpr float CardWidth = 150.f;
-	constexpr float CardHeight = 170.f;
-	constexpr float CardGap = 24.f;
-	constexpr float CardBottom = 26.f;
-	constexpr float CardRadius = 20.f;
-	constexpr float CardPicture = 132.f;
+	constexpr float CardWidth = 140.f;
+	constexpr float CardHeight = 118.f;
+	constexpr float CardGap = 20.f;
+	constexpr float CardBottom = 18.f;
+	constexpr float CardRadius = 18.f;
+	constexpr float CardPicture = 100.f;
 	constexpr float SelectedScale = 1.06f;
-	constexpr float SelectedLift = 10.f;
+	constexpr float SelectedLift = 8.f;
 	constexpr float PulseSeconds = 0.25f;
 	constexpr float PulseAmount = 0.08f;
 
@@ -214,10 +215,10 @@ int32 SCookieHUDWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Allotte
 	const float CounterOutline = 6.f * S;
 	const FVector2D CountSize = P.Measure(Count, P.Font(CounterSize * S, CounterOutline));
 	const float CookieSize = CounterCookie * S;
-	const float GroupWidth = CountSize.X + 8.f * S + CookieSize;
+	const float GroupWidth = CountSize.X + CounterGap * S + CookieSize;
 	const FVector2D CountPos((View.X - GroupWidth) * 0.5, CounterTop * S);
 	P.FancyText(Count, CounterSize * S, CountPos, Cream, Gold, DarkBrown, CounterOutline, 5.f * S);
-	const FVector2D CookiePos(CountPos.X + CountSize.X + 8.f * S, CountPos.Y + (CountSize.Y - CookieSize) * 0.5);
+	const FVector2D CookiePos(CountPos.X + CountSize.X + CounterGap * S, CountPos.Y + (CountSize.Y - CookieSize) * 0.5);
 	if (CookieTexture)
 	{
 		P.Image(CookieTexture, CookiePos + FVector2D(0.0, 5.f * S), CookieSize, 0.25f);
@@ -274,39 +275,39 @@ int32 SCookieHUDWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Allotte
 		const FLinearColor Border = !bAffordable ? GreyBorder : (bSelected ? SelectedBorder : CardBorder);
 		P.Box(At(0.f, 0.f), FVector2D(CardWidth, CardHeight) * K, Fill, CardRadius * K, Border, (bSelected ? 5.f : 3.f) * K);
 		// A soft sheen across the top half gives the card some roundness.
-		P.Box(At(6.f, 5.f), FVector2D(CardWidth - 12.f, 52.f) * K, FLinearColor(1.f, 1.f, 1.f, bSelected ? 0.16f : 0.1f), (CardRadius - 5.f) * K);
+		P.Box(At(6.f, 5.f), FVector2D(CardWidth - 12.f, 36.f) * K, FLinearColor(1.f, 1.f, 1.f, bSelected ? 0.16f : 0.1f), (CardRadius - 5.f) * K);
 
 		// Name, on the card under the picture.
 		const FString Name = Spec.DisplayName.ToString();
-		const FSlateFontInfo NameFont = P.Font(21.f * K, 3.f * K, bAffordable ? DarkBrown : GreyInk);
-		P.CentredText(Name, NameFont, At(CardWidth * 0.5f, 0.f).X, At(0.f, 34.f).Y, bAffordable ? Cream : FLinearColor(0.86f, 0.85f, 0.84f));
+		const FSlateFontInfo NameFont = P.Font(19.f * K, 3.f * K, bAffordable ? DarkBrown : GreyInk);
+		P.CentredText(Name, NameFont, At(CardWidth * 0.5f, 0.f).X, At(0.f, 21.f).Y, bAffordable ? Cream : FLinearColor(0.86f, 0.85f, 0.84f));
 
 		// Cream panel: cost (with a cookie) and how many you own.
-		P.Box(At(10.f, 62.f), FVector2D(CardWidth - 20.f, 70.f) * K, bAffordable ? Panel : GreyPanel, 12.f * K);
+		P.Box(At(9.f, 45.f), FVector2D(CardWidth - 18.f, 48.f) * K, bAffordable ? Panel : GreyPanel, 12.f * K);
 		const FLinearColor TextInk = bAffordable ? Ink : GreyInk;
 		const FString Cost = FormatCount(GameMode->GetCost(Item));
-		const FSlateFontInfo CostFont = P.Font(24.f * K);
+		const FSlateFontInfo CostFont = P.Font(20.f * K);
 		const FVector2D CostSize = P.Measure(Cost, CostFont);
-		const float IconSize = 26.f * K;
+		const float IconSize = 22.f * K;
 		const float CostLeft = At(CardWidth * 0.5f, 0.f).X - (IconSize + 4.f * K + CostSize.X) * 0.5f;
-		const float CostTop = At(0.f, 66.f).Y;
+		const float CostTop = At(0.f, 46.f).Y;
 		if (CookieTexture)
 		{
 			P.Image(bAffordable ? CookieTexture : Hud->GetCookieIcon().Grey.Get(), FVector2D(CostLeft, CostTop + (CostSize.Y - IconSize) * 0.5f), IconSize);
 		}
 		P.Text(Cost, CostFont, FVector2D(CostLeft + IconSize + 4.f * K, CostTop), TextInk);
-		P.CentredText(FString::Printf(TEXT("x %d"), GameMode->GetOwned(Item)), P.Font(23.f * K), At(CardWidth * 0.5f, 0.f).X, At(0.f, 97.f).Y, TextInk);
+		P.CentredText(FString::Printf(TEXT("x %d"), GameMode->GetOwned(Item)), P.Font(18.f * K), At(CardWidth * 0.5f, 0.f).X, At(0.f, 68.f).Y, TextInk);
 
 		// What one more adds.
-		P.Box(At(14.f, 138.f), FVector2D(CardWidth - 28.f, 24.f) * K, bAffordable ? PillFill : GreyPill, 12.f * K);
+		P.Box(At(14.f, 96.f), FVector2D(CardWidth - 28.f, 18.f) * K, bAffordable ? PillFill : GreyPill, 9.f * K);
 		const FString Gain = TEXT("+") + FormatRate(Settings.GetProduction(Item)) + TEXT("/s");
-		const FSlateFontInfo GainFont = P.Font(19.f * K);
+		const FSlateFontInfo GainFont = P.Font(15.f * K);
 		const FVector2D GainSize = P.Measure(Gain, GainFont);
-		P.CentredText(Gain, GainFont, At(CardWidth * 0.5f, 0.f).X, At(0.f, 150.f).Y - GainSize.Y * 0.5, bAffordable ? Cream : FLinearColor(0.7f, 0.69f, 0.68f));
+		P.CentredText(Gain, GainFont, At(CardWidth * 0.5f, 0.f).X, At(0.f, 105.f).Y - GainSize.Y * 0.5, bAffordable ? Cream : FLinearColor(0.7f, 0.69f, 0.68f));
 
 		// The picture stands on the card, rising out of its top.
 		const float PictureSize = CardPicture * K;
-		const FVector2D PicturePos = At(CardWidth * 0.5f, 0.f) + FVector2D(-PictureSize * 0.5f, -PictureSize + 28.f * K);
+		const FVector2D PicturePos = At(CardWidth * 0.5f, 0.f) + FVector2D(-PictureSize * 0.5f, -PictureSize + 22.f * K);
 		if (const FCookieIcon* Icon = Hud->GetItemIcon(Item))
 		{
 			P.Image(bAffordable ? Icon->Color.Get() : Icon->Grey.Get(), PicturePos, PictureSize, bAffordable ? 1.f : 0.85f);
@@ -317,11 +318,11 @@ int32 SCookieHUDWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Allotte
 		}
 
 		// Key number badge on the top-left corner.
-		P.Box(At(-8.f, -8.f), FVector2D(30.f, 30.f) * K, bAffordable ? PillFill : GreyPill, 15.f * K, Border, 2.f * K);
-		const FSlateFontInfo KeyFont = P.Font(18.f * K);
+		P.Box(At(-7.f, -7.f), FVector2D(26.f, 26.f) * K, bAffordable ? PillFill : GreyPill, 13.f * K, Border, 2.f * K);
+		const FSlateFontInfo KeyFont = P.Font(16.f * K);
 		const FString Key = FString::FromInt(Index + 1);
 		const FVector2D KeySize = P.Measure(Key, KeyFont);
-		P.Text(Key, KeyFont, At(7.f, 7.f) - KeySize * 0.5, Cream);
+		P.Text(Key, KeyFont, At(6.f, 6.f) - KeySize * 0.5, Cream);
 	}
 
 	// --- Pop-ups.

@@ -70,6 +70,15 @@ struct FCookieLaunchSpec
 	// Never tips over: flies and lands standing up, only turning about its vertical axis (trees).
 	UPROPERTY(EditAnywhere, Category = "Launch")
 	bool bStayUpright = false;
+
+	// Launched with its front toward the player who threw it (buildings). Use with bStayUpright and no tumble so
+	// it still faces them when it lands.
+	UPROPERTY(EditAnywhere, Category = "Launch")
+	bool bFaceThrower = false;
+
+	// Which way the model's front points in its own space, as a yaw in degrees (-90 = -Y, the kit's front).
+	UPROPERTY(EditAnywhere, Category = "Launch", meta = (EditCondition = "bFaceThrower"))
+	float FrontYaw = -90.f;
 };
 
 // Where a big producer spews its cookies: out of Start (a chimney, a smokestack, a canopy), arcing onto a heap

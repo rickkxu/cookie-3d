@@ -277,7 +277,9 @@ void ACookieCharacter::AimFromCamera(const FCookieLaunchSpec& Spec, FVector& Out
 {
 	const FVector Direction = Camera->GetForwardVector();
 	OutLocation = Camera->GetComponentLocation() + Direction * Spec.SpawnDistance;
-	OutRotation = FRotator(0.f, GetControlRotation().Yaw, 0.f);
+	// Buildings turn their front back toward the player (their front then points along -look).
+	const float FacingTurn = Spec.bFaceThrower ? 180.f - Spec.FrontYaw : 0.f;
+	OutRotation = FRotator(0.f, GetControlRotation().Yaw + FacingTurn, 0.f);
 
 	// Look direction, plus a lift for a visible arc, plus the player's own motion.
 	OutVelocity = Direction * Spec.LaunchSpeed

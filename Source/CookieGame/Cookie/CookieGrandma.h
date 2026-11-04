@@ -49,6 +49,10 @@ private:
 	void CheckSettled();
 	void StartGettingUp();
 	void StartBaking();
+
+	// Once she's back on her feet she turns round (about her pelvis) to face the player who threw her.
+	void TurnToFacePlayer();
+	void TickTurn();
 	void SetAnimated(bool bAnimate);
 
 	// Which way her chest faces, from bone positions, so it works for ragdolls and animations alike.
@@ -65,6 +69,12 @@ private:
 	FTimerHandle SettleTimer;
 	FTimerHandle EmitTimer;
 	FTimerHandle GetUpTimer;
+	FTimerHandle TurnTimer;
+	FVector TurnPivot = FVector::ZeroVector;
+	FVector TurnStartLocation = FVector::ZeroVector;
+	float TurnStartYaw = 0.f;
+	float TurnDeltaYaw = 0.f;
+	float TurnSeconds = 0.f;
 	float StillSeconds = 0.f;
 	float FlyingSeconds = 0.f;
 };

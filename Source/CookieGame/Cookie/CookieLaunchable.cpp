@@ -175,6 +175,8 @@ void ACookieLaunchable::Launch(const FCookieLaunchSpec& Spec, const FVector& Vel
 		FBodyInstance* Body = Mesh->GetBodyInstance();
 		Body->bLockXRotation = true;
 		Body->bLockYRotation = true;
+		// Buildings thrown to face the player don't turn at all, or a skid on landing swings them round.
+		Body->bLockZRotation = Spec.bFaceThrower;
 		Body->SetDOFLock(EDOFMode::SixDOF);
 		Spin = FVector(0.0, 0.0, FMath::FRandRange(-1.f, 1.f) * Spec.TumbleDegreesPerSecond);
 	}

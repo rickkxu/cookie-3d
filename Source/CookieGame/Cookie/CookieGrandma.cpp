@@ -171,6 +171,8 @@ ACookieGrandma* ACookieGrandma::SpawnBaking(UWorld* World, const FTransform& Tra
 	{
 		Grandma->ApplyLook();
 		Grandma->StartEmitting();
+		// Already standing where she was frozen: no turning round.
+		Grandma->State = EState::Baking;
 		Grandma->StartBaking();
 	}
 	return Grandma;
@@ -420,8 +422,53 @@ void ACookieGrandma::StartGettingUp()
 	GetWorldTimerManager().SetTimer(GetUpTimer, this, &ACookieGrandma::StartBaking, Duration, false);
 }
 
+void ACookieGrandma::TurnToFacePlayer()
+{
+	const APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+	const APawn* Player = PlayerController ? PlayerController->GetPawn() : nullptr;
+	if (!Player)
+	{
+		return;
+	}
+	TurnPivot = Body->GetBoneLocation(PelvisBone());
+	FVector ToPlayer = Player->GetActorLocation() - TurnPivot;
+	ToPlayer.Z = 0.0;
+	if (!ToPlayer.Normalize())
+	{
+		return;
+	}
+
+	// Her mesh faces +Y in its own space: at yaw Y she faces (-sin Y, cos Y).
+	const float TargetYaw = FMath::RadiansToDegrees(FMath::Atan2(-ToPlayer.X, ToPlayer.Y));
+	TurnStartYaw = GetActorRotation().Yaw;
+	TurnDeltaYaw = FMath::FindDeltaAngleDegrees(TurnStartYaw, TargetYaw);
+	TurnStartLocation = GetActorLocation();
+	TurnSeconds = 0.f;
+	GetWorldTimerManager().SetTimer(TurnTimer, this, &ACookieGrandma::TickTurn, 1.f / 30.f, true);
+}
+
+void ACookieGrandma::TickTurn()
+{
+	constexpr float TurnDuration = 0.45f;
+	TurnSeconds += 1.f / 30.f;
+	const float Alpha = FMath::SmoothStep(0.f, 1.f, FMath::Min(TurnSeconds / TurnDuration, 1.f));
+	const float Delta = TurnDeltaYaw * Alpha;
+	// Pivot about her pelvis so she turns on the spot.
+	const FVector Location = TurnPivot + (TurnStartLocation - TurnPivot).RotateAngleAxis(Delta, FVector::UpVector);
+	SetActorLocationAndRotation(Location, FRotator(0.f, TurnStartYaw + Delta, 0.f));
+	if (TurnSeconds >= TurnDuration)
+	{
+		GetWorldTimerManager().ClearTimer(TurnTimer);
+	}
+}
+
 void ACookieGrandma::StartBaking()
 {
+	// Thrown grandmas (not ones thawed out already baking) turn to face the player as they settle in.
+	if (State != EState::Baking)
+	{
+		TurnToFacePlayer();
+	}
 	State = EState::Baking;
 	if (UAnimSequence* Idle = UCookieGameSettings::Get().GrandmaIdleAnim.LoadSynchronous())
 	{

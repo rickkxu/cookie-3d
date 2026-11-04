@@ -97,7 +97,8 @@ void ACookieIconStudio::BeginPlay()
 			Grandma->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			Grandma->SetSkeletalMesh(Settings.GrandmaMesh.LoadSynchronous());
 			Grandma->SetupAttachment(RootComponent);
-			Grandma->SetRelativeLocation(FVector(ModelSpacing * Spot++, 0.0, 0.0));
+			// Her mesh faces +Y; turn her round to face the camera on the -Y side.
+			Grandma->SetRelativeLocationAndRotation(FVector(ModelSpacing * Spot++, 0.0, 0.0), FRotator(0.0, 180.0, 0.0));
 			Grandma->SetRelativeScale3D(FVector(Settings.GrandmaScale));
 			Grandma->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 			Grandma->RegisterComponent();
