@@ -44,8 +44,12 @@ public:
 private:
 	void RenderAll();
 
-	// Frames Model from ViewDirection (pointing from the model to the camera) and renders it on its own.
+	// Frames Model from ViewDirection (pointing from the model to the camera) and renders it on its own, as a sticker:
+	// its own paint, cartoon-shaded by a fixed light, punchier colour, a dark-brown outline and a soft drop shadow.
 	FCookieIcon Render(UPrimitiveComponent* Model, const FVector& ViewDirection, const FString& Name);
+
+	// Renders one capture pass of what's currently framed and reads it back.
+	bool CapturePass(ESceneCaptureSource Source, TArray<FLinearColor>& OutPixels);
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneCaptureComponent2D> Capture;

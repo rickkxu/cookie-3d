@@ -24,13 +24,6 @@ namespace
 
 	// The cookie sits on the counter as the game's own Mesh_KitchenObjects_Cookie_01.
 	const TCHAR* CookieMeshPath = TEXT("/Game/LowPolyInterior/Meshes/KitchenObjects/Mesh_KitchenObjects_Cookie_01.Mesh_KitchenObjects_Cookie_01");
-
-	// Simple filmic curve (Hable-free Reinhard variant) and sRGB encoding for the hand-exposed HDR capture.
-	float ToneMap(float Linear)
-	{
-		const float X = Linear * 1.15f;
-		return X * (1.f + X / 6.f) / (1.f + X);
-	}
 }
 
 ACookieIconStudio::ACookieIconStudio()
@@ -46,7 +39,7 @@ ACookieIconStudio::ACookieIconStudio()
 	Capture->bCaptureOnMovement = false;
 	Capture->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
 	Capture->ProjectionType = ECameraProjectionMode::Orthographic;
-	// Linear colour with coverage in alpha; exposed, tone-mapped and anti-aliased by hand below.
+	// Each picture takes three passes (coverage, paint, normals); shaded, outlined and anti-aliased by hand below.
 	Capture->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
 	Capture->ShowFlags.SetAtmosphere(false);
 	Capture->ShowFlags.SetFog(false);
@@ -163,63 +156,184 @@ void ACookieIconStudio::RenderAll()
 	Destroy();
 }
 
+bool ACookieIconStudio::CapturePass(ESceneCaptureSource Source, TArray<FLinearColor>& OutPixels)
+{
+	Capture->CaptureSource = Source;
+	Capture->CaptureScene();
+	return ColorTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(OutPixels) && OutPixels.Num() == RenderSize * RenderSize;
+}
+
 FCookieIcon ACookieIconStudio::Render(UPrimitiveComponent* Model, const FVector& ViewDirection, const FString& Name)
 {
-	// Frame the model's bounding sphere with an orthographic camera.
+	// Frame the model's bounding sphere with an orthographic camera, leaving room round the edge for the outline.
 	const FBoxSphereBounds Bounds = Model->Bounds;
 	const double Radius = FMath::Max(Bounds.SphereRadius, 1.0);
 	Capture->ShowOnlyComponents.Reset();
 	Capture->ShowOnlyComponent(Model);
-	Capture->OrthoWidth = static_cast<float>(Radius * 2.0 * 0.86);
+	Capture->OrthoWidth = static_cast<float>(Radius * 2.0 * 0.98);
 	Capture->SetWorldLocationAndRotation(Bounds.Origin + ViewDirection * Radius * 4.0, (-ViewDirection).Rotation());
-	Capture->CaptureScene();
 
-	TArray<FLinearColor> Pixels;
-	if (!ColorTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(Pixels) || Pixels.Num() != RenderSize * RenderSize)
+	// Three passes: coverage (scene colour alpha), the model's own paint (base colour), and which way each surface faces.
+	TArray<FLinearColor> Scene, Paint, Normals;
+	if (!CapturePass(SCS_SceneColorHDR, Scene) || !CapturePass(SCS_BaseColor, Paint) || !CapturePass(SCS_Normal, Normals))
 	{
 		return FCookieIcon();
 	}
 
 	// Scene colour captures carry 1 - coverage in alpha; check the corner (always empty) to be sure which way round.
-	const bool bInverted = Pixels[0].A > 0.5f;
+	const bool bInverted = Scene[0].A > 0.5f;
 	auto Coverage = [bInverted](const FLinearColor& P) { return FMath::Clamp(bInverted ? 1.f - P.A : P.A, 0.f, 1.f); };
 
-	// Expose by hand: put the model's average brightness at a pleasant mid-tone, whatever the level's lighting units.
-	double LuminanceSum = 0.0;
-	double Covered = 0.0;
-	for (const FLinearColor& P : Pixels)
+	// Normals may come back signed (-1..1) or packed (0..1).
+	bool bSignedNormals = false;
+	for (int32 Index = 0; Index < Normals.Num() && !bSignedNormals; ++Index)
 	{
-		const float A = Coverage(P);
-		LuminanceSum += A * P.GetLuminance();
-		Covered += A;
+		const FLinearColor& N = Normals[Index];
+		bSignedNormals = Coverage(Scene[Index]) > 0.5f && (N.R < -0.01f || N.G < -0.01f || N.B < -0.01f);
 	}
-	const double MeanLuminance = Covered > 0.0 ? LuminanceSum / Covered : 1.0;
-	const float Exposure = static_cast<float>(0.5 / FMath::Max(MeanLuminance, 1e-6));
 
-	// Average 2x2 blocks down to the icon size (smooth edges), tone-map and encode as sRGB with straight alpha.
-	TArray<FColor> Color, Grey;
-	Color.SetNumUninitialized(IconSize * IconSize);
-	Grey.SetNumUninitialized(IconSize * IconSize);
+	// Our own light, fixed relative to the camera: from the upper left and a little in front, whatever the level's sun.
+	const FVector Toward = ViewDirection.GetSafeNormal();
+	const FVector Right = Capture->GetRightVector();
+	const FVector Up = Capture->GetUpVector();
+	const FVector Light = (-0.55 * Right + 0.8 * Up + 0.55 * Toward).GetSafeNormal();
+
+	// Cartoon shading of one render pixel, in linear colour: three hard steps and a thin rim on the shadow side.
+	auto Shade = [&](int32 Index) -> FLinearColor
+	{
+		const FLinearColor& P = Paint[Index];
+		const FLinearColor& NC = Normals[Index];
+		FVector N = bSignedNormals ? FVector(NC.R, NC.G, NC.B) : FVector(NC.R, NC.G, NC.B) * 2.0 - FVector(1.0);
+		N = N.GetSafeNormal();
+		const double Lit = FVector::DotProduct(N, Light);
+		const float Step = static_cast<float>(FMath::Lerp(0.62, 0.8, FMath::SmoothStep(-0.25, -0.15, Lit))
+			+ FMath::Lerp(0.0, 0.22, FMath::SmoothStep(0.3, 0.4, Lit)));
+		const float Rim = Lit < 0.35
+			? 0.35f * FMath::Pow(1.f - FMath::Clamp(static_cast<float>(FVector::DotProduct(N, Toward)), 0.f, 1.f), 3.f)
+			: 0.f;
+		return FLinearColor(P.R * Step + Rim * (P.R + 0.35f), P.G * Step + Rim * (P.G + 0.35f), P.B * Step + Rim * (P.B + 0.35f), 1.f);
+	};
+
+	// Down to the icon size (2x2 averaging for smooth edges), then punchier colour in sRGB: saturation and contrast up.
+	const int32 Count = IconSize * IconSize;
+	TArray<FLinearColor> Art;
+	TArray<float> Alpha;
+	Art.SetNumZeroed(Count);
+	Alpha.SetNumZeroed(Count);
 	for (int32 Y = 0; Y < IconSize; ++Y)
 	{
 		for (int32 X = 0; X < IconSize; ++X)
 		{
 			FLinearColor Sum(0.f, 0.f, 0.f, 0.f);
-			float AlphaSum = 0.f;
+			float Weight = 0.f;
 			for (int32 Sub = 0; Sub < 4; ++Sub)
 			{
-				const FLinearColor& P = Pixels[(Y * 2 + Sub / 2) * RenderSize + X * 2 + Sub % 2];
-				const float A = Coverage(P);
-				Sum += FLinearColor(P.R, P.G, P.B, 0.f) * A;
-				AlphaSum += A;
+				const int32 Index = (Y * 2 + Sub / 2) * RenderSize + X * 2 + Sub % 2;
+				const float A = Coverage(Scene[Index]);
+				if (A > 0.f)
+				{
+					Sum += Shade(Index) * A;
+					Weight += A;
+				}
 			}
-			const float Alpha = AlphaSum / 4.f;
-			const FLinearColor Linear = AlphaSum > 0.f ? Sum / AlphaSum : FLinearColor::Black;
-			const FLinearColor Mapped(ToneMap(Linear.R * Exposure), ToneMap(Linear.G * Exposure), ToneMap(Linear.B * Exposure), Alpha);
-			Color[Y * IconSize + X] = Mapped.ToFColorSRGB();
-			const float Luma = 0.3f * Mapped.R + 0.59f * Mapped.G + 0.11f * Mapped.B;
-			Grey[Y * IconSize + X] = FLinearColor(Luma * 0.8f, Luma * 0.8f, Luma * 0.8f, Alpha).ToFColorSRGB();
+			const int32 Out = Y * IconSize + X;
+			Alpha[Out] = Weight / 4.f;
+			if (Weight > 0.f)
+			{
+				const FLinearColor Linear = Sum / Weight;
+				FLinearColor C(FMath::Pow(FMath::Max(Linear.R, 0.f), 1.f / 2.2f), FMath::Pow(FMath::Max(Linear.G, 0.f), 1.f / 2.2f),
+					FMath::Pow(FMath::Max(Linear.B, 0.f), 1.f / 2.2f), 1.f);
+				const float Luma = 0.299f * C.R + 0.587f * C.G + 0.114f * C.B;
+				const float Saturation = 1.35f;
+				const float Contrast = 1.1f;
+				auto Punch = [&](float V) { return FMath::Clamp(((Luma + (V - Luma) * Saturation) - 0.5f) * Contrast + 0.5f, 0.f, 1.f); };
+				Art[Out] = FLinearColor(Punch(C.R), Punch(C.G), Punch(C.B), 1.f);
+			}
 		}
+	}
+
+	// Sticker outline: the silhouette grown by OutlinePixels (drawn about 40% size on the HUD, so ~3 px on screen),
+	// with a soft last pixel so its edge is anti-aliased.
+	constexpr int32 OutlinePixels = 7;
+	TArray<float> Outline;
+	Outline.SetNumZeroed(Count);
+	for (int32 Y = 0; Y < IconSize; ++Y)
+	{
+		for (int32 X = 0; X < IconSize; ++X)
+		{
+			float Grown = 0.f;
+			for (int32 DY = -OutlinePixels; DY <= OutlinePixels && Grown < 1.f; ++DY)
+			{
+				for (int32 DX = -OutlinePixels; DX <= OutlinePixels; ++DX)
+				{
+					const int32 SX = X + DX;
+					const int32 SY = Y + DY;
+					const float Distance = FMath::Sqrt(static_cast<float>(DX * DX + DY * DY));
+					if (Distance > OutlinePixels + 0.5f || SX < 0 || SY < 0 || SX >= IconSize || SY >= IconSize)
+					{
+						continue;
+					}
+					Grown = FMath::Max(Grown, Alpha[SY * IconSize + SX] * FMath::Clamp(OutlinePixels + 0.5f - Distance, 0.f, 1.f));
+				}
+			}
+			Outline[Y * IconSize + X] = Grown;
+		}
+	}
+
+	// Soft drop shadow: the outlined shape, box-blurred and shifted down.
+	constexpr int32 ShadowDrop = 8;
+	constexpr int32 ShadowBlur = 6;
+	TArray<float> Blurred, Shadow;
+	Blurred.SetNumZeroed(Count);
+	Shadow.SetNumZeroed(Count);
+	for (int32 Y = 0; Y < IconSize; ++Y)
+	{
+		for (int32 X = 0; X < IconSize; ++X)
+		{
+			float Sum = 0.f;
+			for (int32 D = -ShadowBlur; D <= ShadowBlur; ++D)
+			{
+				Sum += Outline[Y * IconSize + FMath::Clamp(X + D, 0, IconSize - 1)];
+			}
+			Blurred[Y * IconSize + X] = Sum / (2 * ShadowBlur + 1);
+		}
+	}
+	for (int32 Y = 0; Y < IconSize; ++Y)
+	{
+		for (int32 X = 0; X < IconSize; ++X)
+		{
+			float Sum = 0.f;
+			for (int32 D = -ShadowBlur; D <= ShadowBlur; ++D)
+			{
+				const int32 SY = Y - ShadowDrop + D;
+				Sum += (SY >= 0 && SY < IconSize) ? Blurred[SY * IconSize + X] : 0.f;
+			}
+			Shadow[Y * IconSize + X] = 0.35f * Sum / (2 * ShadowBlur + 1);
+		}
+	}
+
+	// Stack them: shadow, then the dark-brown outline, then the picture (sRGB values, straight alpha).
+	const FLinearColor OutlineColor(0.275f, 0.13f, 0.04f, 1.f);
+	const FLinearColor ShadowColor(0.08f, 0.03f, 0.01f, 1.f);
+	auto Over = [](const FLinearColor& Top, float TopA, const FLinearColor& Bottom, float BottomA, float& OutA)
+	{
+		OutA = TopA + BottomA * (1.f - TopA);
+		return OutA > 0.f ? (Top * TopA + Bottom * (BottomA * (1.f - TopA))) / OutA : FLinearColor::Black;
+	};
+	auto ToByte = [](float V) { return static_cast<uint8>(FMath::Clamp(FMath::RoundToInt(V * 255.f), 0, 255)); };
+	TArray<FColor> Color, Grey;
+	Color.SetNumUninitialized(Count);
+	Grey.SetNumUninitialized(Count);
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		float UnderAlpha = 0.f;
+		float FinalAlpha = 0.f;
+		const FLinearColor Under = Over(OutlineColor, Outline[Index], ShadowColor, Shadow[Index], UnderAlpha);
+		const FLinearColor Final = Over(Art[Index], Alpha[Index], Under, UnderAlpha, FinalAlpha);
+		const uint8 A = ToByte(FinalAlpha);
+		Color[Index] = FColor(ToByte(Final.R), ToByte(Final.G), ToByte(Final.B), A);
+		const uint8 Luma = ToByte((0.299f * Final.R + 0.587f * Final.G + 0.114f * Final.B) * 0.85f);
+		Grey[Index] = FColor(Luma, Luma, Luma, A);
 	}
 
 	auto MakeTexture = [this](const TArray<FColor>& Data, const FString& TextureName) -> UTexture2D*
