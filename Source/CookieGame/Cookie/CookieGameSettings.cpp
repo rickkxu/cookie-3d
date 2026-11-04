@@ -135,14 +135,18 @@ UCookieGameSettings::UCookieGameSettings()
 	CookieCloud.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Cookie/Items/SM_CookieCloud.SM_CookieCloud")));
 	CookieCloud.Launch.bPlaceholderMaterial = false;
 	CookieCloud.Launch.Color = FLinearColor(0.93f, 0.95f, 1.f);
-	CookieCloud.Launch.SpawnDistance = 1600.f;
+	// It's about 50 m across, so it starts well ahead of the player and hovers higher and further off.
+	CookieCloud.Launch.SpawnDistance = 3000.f;
 	CookieCloud.Launch.TumbleDegreesPerSecond = 0.f;
 	CookieCloud.Launch.bFloats = true;
-	CookieCloud.Launch.FloatHeight = 3000.f;
-	CookieCloud.Launch.FloatDistance = 3500.f;
-	CookieCloud.Launch.FloatSeconds = 2.5f;
-	// Its pivot is the middle of its flat underside; the rain leaves from anywhere across it (24 x 12 m).
-	CookieCloud.Spouts.Add(Spout(FVector(0, 0, -20), FVector(1000, 480, 0), FVector(0, 0, 0), 1300.f, 2.4f, 1.f, 160.f));
+	// Broadside on (its long side toward the player), so you see all 50 m of it.
+	CookieCloud.Launch.bFaceThrower = true;
+	CookieCloud.Launch.FloatHeight = 4000.f;
+	CookieCloud.Launch.FloatDistance = 5500.f;
+	CookieCloud.Launch.FloatSeconds = 3.f;
+	// Its pivot sits in its lumpy belly (the lowest puffs hang 2.7 m below it); the rain leaves from anywhere across
+	// the underside (38 x 16 m), starting just inside the puffs so it drops out of them.
+	CookieCloud.Spouts.Add(Spout(FVector(0, 0, -110), FVector(1900, 800, 90), FVector(0, 0, 0), 2600.f, 2.8f, 1.f, 200.f));
 
 	PileCoreMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Cookie/Items/MI_Item_Dough.MI_Item_Dough")));
 

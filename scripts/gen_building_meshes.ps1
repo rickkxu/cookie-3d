@@ -368,8 +368,8 @@ $m = Add $mouth (Mul $d 170)
 Write-Host ("Factory chute mouth (spout start): {0:0} {1:0} {2:0}" -f $m[0], $m[1], $m[2])
 
 # ---------------------------------------------------------------------------------------------------------------
-# Cookie cloud: faceted puffs (jittered icospheres, like the trees' leaf clumps) with a flat underside, white on
-# top and blue-grey underneath. Pivot = the middle of the underside; about 24 m x 13 m x 9 m.
+# Cookie cloud: faceted puffs (jittered icospheres, like the trees' leaf clumps) with a lumpy, rounded belly, white
+# on top and blue-grey underneath. About 50 m x 26 m x 20 m.
 # The cookies studding it are the game's own cookie, merged on in the editor at the spots this prints
 # (and writes to Cloud_cookies.txt): x y z pitch yaw scale, each half sunk into a puff.
 function New-IcoSphere {
@@ -405,21 +405,24 @@ function New-IcoSphere {
     return ,@($v, $faces)
 }
 
-# A point on a puff's surface in direction Dir: the underside is squashed, and nothing goes below z = 0 (flat base).
+# A point on a puff's surface in direction Dir: the underside is a little squashed but still round, so the cloud's
+# belly is lumpy puffs, not a flat base.
+$clSquash = 0.7
 function PuffPoint($Puff, $Dir, [double]$Scale) {
-    $dz = if ($Dir[2] -lt 0) { $Dir[2] * 0.85 } else { $Dir[2] }
-    $pt = V ($Puff[0] + $Dir[0] * $Puff[3] * $Scale) ($Puff[1] + $Dir[1] * $Puff[3] * $Scale) ($Puff[2] + $dz * $Puff[3] * $Scale)
-    if ($pt[2] -lt 0) { $pt[2] = 0.0 }
-    return ,$pt
+    $dz = if ($Dir[2] -lt 0) { $Dir[2] * $clSquash } else { $Dir[2] }
+    return ,(V ($Puff[0] + $Dir[0] * $Puff[3] * $Scale) ($Puff[1] + $Dir[1] * $Puff[3] * $Scale) ($Puff[2] + $dz * $Puff[3] * $Scale))
 }
 
 Begin-Mesh
 $CloudTop = "MI_Item_Cloud"; $CloudShade = "MI_Item_CloudShade"
-# x, y, z (centre), radius
+# The whole cloud is drawn at this scale (cookies included).
+$clS = 2.0
+# x, y, z (centre), radius, before scaling. The lowest puffs hang down in the middle so the belly bulges.
 $clPuffs = @(
     @(0, 0, 180, 440), @(-640, 60, 150, 370), @(640, -40, 150, 380), @(-1020, -20, 105, 260), @(1020, 40, 110, 270),
     @(-300, -340, 120, 300), @(320, 340, 125, 310), @(-290, 330, 115, 290), @(300, -330, 115, 290),
-    @(-180, 0, 470, 320), @(260, 40, 440, 300), @(-650, 40, 350, 240), @(650, -20, 340, 250), @(40, -120, 640, 220), @(-420, -80, 560, 200))
+    @(-180, 0, 470, 320), @(260, 40, 440, 300), @(-650, 40, 350, 240), @(650, -20, 340, 250), @(40, -120, 640, 220), @(-420, -80, 560, 200),
+    @(-330, 40, 40, 250), @(360, -30, 50, 240), @(-820, -60, 60, 190), @(840, 60, 60, 190)) | ForEach-Object { ,@(($_[0] * $clS), ($_[1] * $clS), ($_[2] * $clS), ($_[3] * $clS)) }
 $clIco = New-IcoSphere
 $clRng = New-Object System.Random(2024)
 foreach ($clPuff in $clPuffs) {
@@ -434,51 +437,44 @@ foreach ($clPuff in $clPuffs) {
     }
 }
 Write-Mesh "Cloud"
+$clMinZ = 1e9
+foreach ($clPuff in $clPuffs) { $clMinZ = [Math]::Min($clMinZ, $clPuff[2] - $clSquash * $clPuff[3]) }
+Write-Host ("Cloud underside lowest point: z = {0:0}" -f $clMinZ)
 
 # Cookie spots: on the visible surface of a puff (not inside another), spaced apart, half sunk in.
+# The first 28 anywhere, then 10 on the underside so the belly has cookies to see from below.
 $clCookies = New-Object System.Collections.ArrayList
 $clPick = New-Object System.Random(99)
 $clTries = 0
-while ($clCookies.Count -lt 28 -and $clTries -lt 4000) {
+while ($clCookies.Count -lt 38 -and $clTries -lt 8000) {
     $clTries++
     $clPuff = $clPuffs[$clPick.Next($clPuffs.Count)]
-    $cu = 2 * $clPick.NextDouble() - 1; $cang = 2 * [Math]::PI * $clPick.NextDouble(); $cs = [Math]::Sqrt(1 - $cu * $cu)
+    $cu = 2 * $clPick.NextDouble() - 1
+    if ($clCookies.Count -ge 28) { $cu = -0.35 - 0.65 * $clPick.NextDouble() }
+    $cang = 2 * [Math]::PI * $clPick.NextDouble(); $cs = [Math]::Sqrt(1 - $cu * $cu)
     $clDir = V ($cs * [Math]::Cos($cang)) ($cs * [Math]::Sin($cang)) $cu
     $cp = PuffPoint $clPuff $clDir 0.97
     $hidden = $false
     foreach ($other in $clPuffs) {
-        if ($other -eq $clPuff) { continue }
-        if ((Len (Sub $cp (V $other[0] $other[1] $other[2]))) -lt $other[3] * 0.95) { $hidden = $true; break }
+        if ([object]::ReferenceEquals($other, $clPuff)) { continue }
+        # Inside the other puff's (bottom-squashed) shape?
+        $ox = $cp[0] - $other[0]; $oy = $cp[1] - $other[1]; $oz = $cp[2] - $other[2]
+        if ($oz -lt 0) { $oz = $oz / $clSquash }
+        if (($ox * $ox + $oy * $oy + $oz * $oz) -lt ($other[3] * 0.95) * ($other[3] * 0.95)) { $hidden = $true; break }
     }
     if ($hidden) { continue }
     $crowded = $false
-    foreach ($prev in $clCookies) { if ((Len (Sub $cp (V $prev[6] $prev[7] $prev[8]))) -lt 230) { $crowded = $true; break } }
+    foreach ($prev in $clCookies) { if ((Len (Sub $cp (V $prev[6] $prev[7] $prev[8]))) -lt 230 * $clS) { $crowded = $true; break } }
     if ($crowded) { continue }
-    $cnz = if ($clDir[2] -lt 0) { $clDir[2] * 1.8 } else { $clDir[2] }
+    # Normal of the squashed underside: z stretched by 1 / squash.
+    $cnz = if ($clDir[2] -lt 0) { $clDir[2] / $clSquash } else { $clDir[2] }
     $cnorm = Unit (V $clDir[0] $clDir[1] $cnz)
-    if ($cp[2] -le 1) { $cnorm = V 0 0 -1 }
-    $cscale = 8.5 + 4.0 * $clPick.NextDouble()
+    $cscale = (8.5 + 4.0 * $clPick.NextDouble()) * $clS
     # The game cookie is 2.74 cm thick (x scale), its pivot on its back face: sink ~45% of it.
     $cpivot = Sub $cp (Mul $cnorm (2.74 * $cscale * 0.45))
     $cpitch = [Math]::Acos([Math]::Max(-1.0, [Math]::Min(1.0, [double]$cnorm[2]))) * 180 / [Math]::PI
     $cyaw = [Math]::Atan2(-$cnorm[1], -$cnorm[0]) * 180 / [Math]::PI
     [void]$clCookies.Add(@($cpivot[0], $cpivot[1], $cpivot[2], $cpitch, $cyaw, $cscale, $cp[0], $cp[1], $cp[2]))
-}
-# Plus some on the flat underside, facing down at the player below (the sphere test above skips most of it).
-$clBottom = 0
-$clTries = 0
-while ($clBottom -lt 9 -and $clTries -lt 4000) {
-    $clTries++
-    $bx = -1150 + 2300 * $clPick.NextDouble(); $by = -560 + 1120 * $clPick.NextDouble()
-    $under = $false
-    foreach ($o in $clPuffs) { if ((($bx - $o[0]) * ($bx - $o[0]) + ($by - $o[1]) * ($by - $o[1])) -lt ($o[3] * 0.75) * ($o[3] * 0.75)) { $under = $true; break } }
-    if (-not $under) { continue }
-    $crowded = $false
-    foreach ($prev in $clCookies) { if ((Len (Sub (V $bx $by 0) (V $prev[6] $prev[7] $prev[8]))) -lt 260) { $crowded = $true; break } }
-    if ($crowded) { continue }
-    $cscale = 9.0 + 3.5 * $clPick.NextDouble()
-    [void]$clCookies.Add(@($bx, $by, (2.74 * $cscale * 0.45), 180.0, (360.0 * $clPick.NextDouble()), $cscale, $bx, $by, 0.0))
-    $clBottom++
 }
 $clLines = $clCookies | ForEach-Object { "{0:0.#} {1:0.#} {2:0.#} {3:0.##} {4:0.##} {5:0.##}" -f $_[0], $_[1], $_[2], $_[3], $_[4], $_[5] }
 Set-Content -Path (Join-Path $OutDir "Cloud_cookies.txt") -Value ($clLines -join "`n") -Encoding ASCII

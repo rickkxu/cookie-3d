@@ -159,10 +159,10 @@ a tapered limb, and a drooping pine tier, composed into `SM_Tree_Round` and `SM_
 | Cookie tree | 1,500 | 15 | `SM_CookieTree`: the round tree with cookies on its canopy | Drop out of the canopy onto a heap round the trunk |
 | Bakery | 25,000 | 120 | `SM_BakeryShop`: pink shopfront with display windows, scalloped striped awning, big cookie sign (the game's cookie), Dutch-gable false front, chocolate roof with icing drips | Tumble out of the front door onto a heap in front of it |
 | Cookie factory | 400,000 | 1,000 | `SM_CookieFactory`: brick hall, sawtooth glass roof, smokestacks, a 9 m game cookie standing on the roof as its sign, a massive yellow launch chute | Launched out of the chute ~29 m into the air, landing on a mountain ~50 m away |
-| Cookie cloud | 6,000,000 | 8,000 | `SM_CookieCloud`: faceted white puffs with a flat base, 37 game cookies studded over the top, sides and underside, glowing `M_CookieCloud` so the underside stays white | Rains from all across the underside onto a heap below |
+| Cookie cloud | 6,000,000 | 8,000 | `SM_CookieCloud`: ~50 m of faceted white puffs with a lumpy, rounded belly, 38 game cookies studded over the top, sides and underside, glowing `M_CookieCloud` so the underside stays white | Rains from all across the underside onto a heap below |
 
-Bought clouds don't land: they glide ~35 m ahead and hover ~30 m above whatever is underneath (`bFloats`,
-`FloatDistance`, `FloatHeight`), then stay there. The cloud shell comes from the same generator script.
+Bought clouds don't land: they glide ~55 m ahead, turn broadside to the player and hover ~40 m above whatever is underneath
+(`bFloats`, `FloatDistance`, `FloatHeight`), then stay there. The cloud shell comes from the same generator script.
 
 The models are merged meshes built in the editor from kit pieces, engine shapes and the foliage pieces, with convex
 collision so they can be thrown. Each item's **Spouts** (in its settings) say where cookies leave, where they land, how
