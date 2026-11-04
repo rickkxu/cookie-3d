@@ -715,6 +715,9 @@ void ACookieSettledManager::StartPileBuild(FPile& Pile)
 	Pile.Staging.Reset();
 	Pile.Staging.Reserve(Pile.BuildTotal);
 	Pile.bBuilding = true;
+	// Growing (or moved by a merge): new cookies first, then the core under them. Shrinking: the smaller core first,
+	// so the old core never sticks out past the new, smaller cookie layer.
+	Pile.bCoreAfterCookies = !Pile.Chunks.IsEmpty() && Pile.BuildShape.Radius >= Pile.BuiltRadius;
 
 	// A brand-new heap gets its core (its collision) straight away, so nothing falls through while its cookies are
 	// still being laid out. A growing heap swaps its core with its cookies, so the core never shows above them.
@@ -776,15 +779,42 @@ void ACookieSettledManager::TickPileBuilds(double BudgetSeconds)
 		}
 		if (Pile.ApplyNextChunk < 0)
 		{
-			BuildPileCore(Pile, Pile.BuildShape);
+			// The layout runs from the summit outwards, so handing it over chunk by chunk would cover (or re-lay) the
+			// top first and leave the foot bare or stale for seconds. Deal the cookies out so every chunk is a thin,
+			// even sprinkle over the whole heap instead: part-way through, the heap is just a little sparser.
+			const int32 ChunkCount = FMath::DivideAndRoundUp(Pile.Staging.Num(), CookiesPerSurfaceChunk);
+			if (ChunkCount > 1)
+			{
+				TArray<FTransform> Dealt;
+				Dealt.Reserve(Pile.Staging.Num());
+				for (int32 First = 0; First < ChunkCount; ++First)
+				{
+					for (int32 Index = First; Index < Pile.Staging.Num(); Index += ChunkCount)
+					{
+						Dealt.Add(Pile.Staging[Index]);
+					}
+				}
+				Pile.Staging = MoveTemp(Dealt);
+			}
+			if (!Pile.bCoreAfterCookies)
+			{
+				BuildPileCore(Pile, Pile.BuildShape);
+			}
 			Pile.ApplyNextChunk = 0;
 		}
+		// (ApplyPileChunks ends the build when the last chunk is in, so keep the shape for the core.)
+		const FPileShape Shape = Pile.BuildShape;
 		while (!ApplyPileChunks(Pile, 1))
 		{
 			if (FPlatformTime::Seconds() > Deadline)
 			{
 				return;
 			}
+		}
+		if (Pile.bCoreAfterCookies)
+		{
+			Pile.bCoreAfterCookies = false;
+			BuildPileCore(Pile, Shape);
 		}
 	}
 }

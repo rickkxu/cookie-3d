@@ -124,6 +124,9 @@ private:
 		int32 BuildNext = 0;
 		int32 ApplyNextChunk = -1;
 		TArray<FTransform> Staging;
+		// The new core waits until every new cookie is in place (a growing heap): a bigger core put in first would
+		// poke out through the old, smaller cookie layer round the foot while the chunks are handed over.
+		bool bCoreAfterCookies = false;
 	};
 
 	struct FGhost
