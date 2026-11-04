@@ -21,9 +21,9 @@ namespace CookieHUDStyle
 	constexpr float CounterCookie = 100.f;
 	constexpr float CounterGap = 22.f;
 	constexpr float RateTextSize = 32.f;
-	constexpr float CardWidth = 104.f;
+	constexpr float CardWidth = 116.f;
 	constexpr float CardHeight = 78.f;
-	constexpr float CardGap = 18.f;
+	constexpr float CardGap = 16.f;
 	constexpr float CardBottom = 18.f;
 	constexpr float CardRadius = 16.f;
 	constexpr float CardPicture = 84.f;
@@ -235,6 +235,26 @@ int32 SCookieHUDWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Allotte
 	const float CardTop = View.Y - (CardBottom + CardHeight) * S;
 	TArray<FVector2D> CardTops;
 
+	// Each line (names, costs, rates) is one size on every card: as big as it can be while the widest still fits.
+	auto CostText = [&](ECookieItem Item) { return FormatCount(GameMode->GetCost(Item)); };
+	auto GainText = [&](ECookieItem Item) { return TEXT("+") + FormatRate(Settings.GetProduction(Item)) + TEXT("/s"); };
+	auto RowShrink = [&](TFunctionRef<FString(ECookieItem)> TextOf, float SizePx, float OutlinePx, float ExtraPx)
+	{
+		float Shrink = 1.f;
+		for (ECookieItem Item : TEnumRange<ECookieItem>())
+		{
+			const FVector2D Size = P.Measure(TextOf(Item), P.Font(SizePx * S, OutlinePx * S));
+			Shrink = FMath::Min(Shrink, static_cast<float>((CardWidth - 12.f - ExtraPx) * S / FMath::Max(Size.X, 1.0)));
+		}
+		return Shrink;
+	};
+	constexpr float NameSize = 16.f, NameOutline = 2.5f;
+	constexpr float CostSizePx = 18.f, CostOutline = 2.5f, CostIcon = 18.f, CostIconGap = 6.f;
+	constexpr float GainSizePx = 14.f, GainOutline = 3.f;
+	const float NameShrink = RowShrink([&](ECookieItem Item) { return Settings.GetItem(Item).DisplayName.ToString(); }, NameSize, NameOutline, 0.f);
+	const float CostShrink = RowShrink(CostText, CostSizePx, CostOutline, CostIcon + CostIconGap);
+	const float GainShrink = RowShrink(GainText, GainSizePx, GainOutline, 0.f);
+
 	for (ECookieItem Item : TEnumRange<ECookieItem>())
 	{
 		const int32 Index = static_cast<int32>(Item);
@@ -271,25 +291,19 @@ int32 SCookieHUDWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Allotte
 		// A soft sheen across the top gives the card some roundness.
 		P.Box(At(5.f, 4.f), FVector2D(CardWidth - 10.f, 26.f) * K, FLinearColor(1.f, 1.f, 1.f, bSelected ? 0.16f : 0.1f), (CardRadius - 4.f) * K);
 
-		// Three lines straight on the card: name, cost (then a cookie), what one more adds. Each shrinks to fit.
+		// Three lines straight on the card: name, cost (then a cookie), what one more adds.
 		const FLinearColor TextColor = bAffordable ? Cream : FLinearColor(0.86f, 0.85f, 0.84f);
 		const FLinearColor OutlineColor = bAffordable ? DarkBrown : GreyInk;
 		const float CentreX = At(CardWidth * 0.5f, 0.f).X;
-		const float MaxWidth = (CardWidth - 12.f) * K;
-		auto Fit = [&](const FString& Text, float SizePx, float OutlinePx, float ExtraWidth = 0.f)
-		{
-			const FVector2D Size = P.Measure(Text, P.Font(SizePx * K, OutlinePx * K, OutlineColor));
-			const float Shrink = FMath::Min(1.f, static_cast<float>((MaxWidth - ExtraWidth) / FMath::Max(Size.X, 1.0)));
-			return P.Font(SizePx * K * Shrink, OutlinePx * K * Shrink, OutlineColor);
-		};
+		auto LineFont = [&](float SizePx, float OutlinePx, float Shrink) { return P.Font(SizePx * K * Shrink, OutlinePx * K * Shrink, OutlineColor); };
 
 		const FString Name = Spec.DisplayName.ToString();
-		P.CentredText(Name, Fit(Name, 16.f, 2.5f), CentreX, At(0.f, 17.f).Y, TextColor);
+		P.CentredText(Name, LineFont(NameSize, NameOutline, NameShrink), CentreX, At(0.f, 17.f).Y, TextColor);
 
-		const FString Cost = FormatCount(GameMode->GetCost(Item));
-		const float IconSize = 18.f * K;
-		const float IconGap = 6.f * K;
-		const FSlateFontInfo CostFont = Fit(Cost, 18.f, 2.5f, IconSize + IconGap);
+		const FString Cost = CostText(Item);
+		const float IconSize = CostIcon * K;
+		const float IconGap = CostIconGap * K;
+		const FSlateFontInfo CostFont = LineFont(CostSizePx, CostOutline, CostShrink);
 		const FVector2D CostSize = P.Measure(Cost, CostFont);
 		const float CostLeft = CentreX - (CostSize.X + IconGap + IconSize) * 0.5f;
 		const float CostTop = At(0.f, 35.f).Y;
@@ -300,8 +314,8 @@ int32 SCookieHUDWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Allotte
 				FVector2D(CostLeft + CostSize.X + IconGap, CostTop + (CostSize.Y - IconSize) * 0.5f), IconSize);
 		}
 
-		const FString Gain = TEXT("+") + FormatRate(Settings.GetProduction(Item)) + TEXT("/s");
-		P.CentredText(Gain, Fit(Gain, 14.f, 3.f), CentreX, At(0.f, 56.f).Y, bAffordable ? RateGold : FLinearColor(0.8f, 0.78f, 0.75f));
+		const FString Gain = GainText(Item);
+		P.CentredText(Gain, LineFont(GainSizePx, GainOutline, GainShrink), CentreX, At(0.f, 56.f).Y, bAffordable ? RateGold : FLinearColor(0.8f, 0.78f, 0.75f));
 
 		// The picture stands on the card, rising out of its top.
 		const float PictureSize = CardPicture * K;
