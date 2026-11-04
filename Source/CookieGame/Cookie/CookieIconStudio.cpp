@@ -17,13 +17,11 @@
 namespace
 {
 	// High above everything, so nothing else is in the pictures or casts shadows on them.
-	const FVector StudioLocation(0.0, 0.0, 150000.0);
+	const FVector IconStudioLocation(0.0, 0.0, 150000.0);
 
 	// Models stand this far apart, each in its own spot.
-	constexpr double ModelSpacing = 8000.0;
+	constexpr double IconModelSpacing = 8000.0;
 
-	// The cookie sits on the counter as the game's own Mesh_KitchenObjects_Cookie_01.
-	const TCHAR* CookieMeshPath = TEXT("/Game/LowPolyInterior/Meshes/KitchenObjects/Mesh_KitchenObjects_Cookie_01.Mesh_KitchenObjects_Cookie_01");
 }
 
 ACookieIconStudio::ACookieIconStudio()
@@ -53,7 +51,7 @@ ACookieIconStudio::ACookieIconStudio()
 void ACookieIconStudio::BeginPlay()
 {
 	Super::BeginPlay();
-	SetActorLocation(StudioLocation);
+	SetActorLocation(IconStudioLocation);
 
 	ColorTarget = NewObject<UTextureRenderTarget2D>(this);
 	ColorTarget->RenderTargetFormat = RTF_RGBA16f;
@@ -72,7 +70,7 @@ void ACookieIconStudio::BeginPlay()
 		Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Component->SetStaticMesh(Mesh);
 		Component->SetupAttachment(RootComponent);
-		Component->SetRelativeLocationAndRotation(FVector(ModelSpacing * Spot++, 0.0, 0.0), Rotation);
+		Component->SetRelativeLocationAndRotation(FVector(IconModelSpacing * Spot++, 0.0, 0.0), Rotation);
 		Component->SetRelativeScale3D(Scale);
 		Component->RegisterComponent();
 		// Full-resolution textures: the kit colours its models from a small palette texture, which blurs to grey at low mips.
@@ -91,7 +89,7 @@ void ACookieIconStudio::BeginPlay()
 			Grandma->SetSkeletalMesh(Settings.GrandmaMesh.LoadSynchronous());
 			Grandma->SetupAttachment(RootComponent);
 			// Her mesh faces +Y; turn her round to face the camera on the -Y side.
-			Grandma->SetRelativeLocationAndRotation(FVector(ModelSpacing * Spot++, 0.0, 0.0), FRotator(0.0, 180.0, 0.0));
+			Grandma->SetRelativeLocationAndRotation(FVector(IconModelSpacing * Spot++, 0.0, 0.0), FRotator(0.0, 180.0, 0.0));
 			Grandma->SetRelativeScale3D(FVector(Settings.GrandmaScale));
 			Grandma->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 			Grandma->RegisterComponent();
@@ -108,7 +106,8 @@ void ACookieIconStudio::BeginPlay()
 		}
 		Models.Add(Component);
 	}
-	Models.Add(AddStatic(LoadObject<UStaticMesh>(nullptr, CookieMeshPath), FVector(1.0), FRotator::ZeroRotator));
+	// The cookie you shoot.
+	Models.Add(AddStatic(Settings.Cookie.Mesh.LoadSynchronous(), FVector(1.0), FRotator::ZeroRotator));
 
 	// A moment for the grandma to strike her pose, every model to reach the renderer and its textures to stream in.
 	GetWorldTimerManager().SetTimer(RenderTimer, this, &ACookieIconStudio::RenderAll, 1.5f, false);

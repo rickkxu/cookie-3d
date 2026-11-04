@@ -20,8 +20,7 @@ namespace CookieHUDStyle
 	constexpr float CounterSize = 84.f;
 	constexpr float CounterCookie = 100.f;
 	constexpr float CounterGap = 22.f;
-	constexpr float PillHeight = 42.f;
-	constexpr float PillTextSize = 27.f;
+	constexpr float RateTextSize = 32.f;
 	constexpr float CardWidth = 140.f;
 	constexpr float CardHeight = 118.f;
 	constexpr float CardGap = 20.f;
@@ -45,7 +44,6 @@ namespace CookieHUDStyle
 	const FLinearColor Glow = FLinearColor::FromSRGBColor(FColor(255, 206, 40));
 	const FLinearColor Panel = FLinearColor::FromSRGBColor(FColor(255, 233, 178));
 	const FLinearColor PillFill = FLinearColor::FromSRGBColor(FColor(66, 30, 9));
-	const FLinearColor PillBorder = FLinearColor::FromSRGBColor(FColor(232, 176, 70));
 	const FLinearColor GreyCard = FLinearColor::FromSRGBColor(FColor(112, 108, 104));
 	const FLinearColor GreyBorder = FLinearColor::FromSRGBColor(FColor(160, 156, 150));
 	const FLinearColor GreyPanel = FLinearColor::FromSRGBColor(FColor(176, 172, 166));
@@ -226,13 +224,11 @@ int32 SCookieHUDWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Allotte
 	}
 
 	const FString Rate = FormatRate(GameMode->GetCookiesPerSecond()) + TEXT("/s");
-	const FSlateFontInfo RateFont = P.Font(PillTextSize * S);
-	const FVector2D RateSize = P.Measure(Rate, RateFont);
-	const FVector2D PillSize(RateSize.X + 48.f * S, PillHeight * S);
-	const FVector2D PillPos((View.X - PillSize.X) * 0.5, CountPos.Y + CountSize.Y - 4.f * S);
-	P.Box(PillPos + FVector2D(0.0, 3.f * S), PillSize, FLinearColor(0.f, 0.f, 0.f, 0.25f), PillSize.Y * 0.5f);
-	P.Box(PillPos, PillSize, WithAlpha(PillFill, 0.92f), PillSize.Y * 0.5f, PillBorder, 2.f * S);
-	P.CentredText(Rate, RateFont, View.X * 0.5, PillPos.Y + (PillSize.Y - RateSize.Y) * 0.5, Cream);
+	// The rate under the count: cream text in a dark-brown border, like the count but plain.
+	const float RateOutline = 4.f * S;
+	const FVector2D RateSize = P.Measure(Rate, P.Font(RateTextSize * S, RateOutline));
+	const FVector2D RatePos((View.X - RateSize.X) * 0.5, CountPos.Y + CountSize.Y - 2.f * S);
+	P.FancyText(Rate, RateTextSize * S, RatePos, Cream, Cream, DarkBrown, RateOutline, 3.f * S);
 
 	// --- Bottom: the item cards.
 	const int32 CardCount = static_cast<int32>(ECookieItem::Count);
