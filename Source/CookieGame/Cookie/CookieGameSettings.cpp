@@ -165,7 +165,8 @@ UCookieGameSettings::UCookieGameSettings()
 	Place(ECookieItem::Factory, -4500, 2600, 180.f);
 	Place(ECookieItem::Bakery, 9600, 1200, 200.f);
 	Place(ECookieItem::Bakery, -6800, -1650, 90.f);
-	Place(ECookieItem::CookieTree, -700, -850, 0.f);  // Its heap stays off the front path.
+	// In the open lawn between the front path and the yard tree at (-620, -820), toward the sidewalk.
+	Place(ECookieItem::CookieTree, -340, -980, 0.f);
 	Place(ECookieItem::CookieTree, 1500, -800, 70.f);
 	auto Heap = [this](double X, double Y, int64 Cookies)
 	{
