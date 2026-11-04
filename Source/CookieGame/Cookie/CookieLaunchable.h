@@ -46,6 +46,9 @@ private:
 	// Runs a few times a second. Freezes this into an instance once it has been still long enough.
 	void CheckSettled();
 
+	// A cookie that came to rest on a grandma is pushed off her instead of freezing there. True if it was.
+	bool ShoveOffGrandma(const class ACookieSettledManager* Settled);
+
 	UPROPERTY(VisibleAnywhere, Category = "Cookie")
 	TObjectPtr<UStaticMeshComponent> Mesh;
 
@@ -57,4 +60,6 @@ private:
 	TArray<float> SpoutCarry;
 	float StillSeconds = 0.f;
 	float FlyingSeconds = 0.f;
+	int32 GrandmaShoves = 0;
+	static constexpr int32 MaxGrandmaShoves = 6;
 };

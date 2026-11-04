@@ -1,4 +1,5 @@
 #include "CookieLaunchable.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CookieGameMode.h"
 #include "CookieGrandma.h"
@@ -89,9 +90,12 @@ void ACookieLaunchable::PopCookie(UWorld* World, const FVector& Top)
 	// The bank only ever grows by cookies you can see: this one.
 	GameMode->AddCookies(1.0);
 
-	// Pop straight up, scattering a little sideways.
+	// Pop up and out to the side, always fast enough sideways to clear the helper's top (a cookie popped
+	// straight up out of a grandma would land back on her head).
 	const UCookieGameSettings& Settings = UCookieGameSettings::Get();
-	const FVector2D Sideways = FMath::RandPointInCircle(Settings.EmitSpreadSpeed);
+	const double SidewaysAngle = FMath::FRandRange(0.0, UE_DOUBLE_TWO_PI);
+	const double SidewaysSpeed = Settings.EmitSpreadSpeed * FMath::FRandRange(0.6, 1.0);
+	const FVector2D Sideways(SidewaysSpeed * FMath::Cos(SidewaysAngle), SidewaysSpeed * FMath::Sin(SidewaysAngle));
 	const FVector Velocity(Sideways.X, Sideways.Y, Settings.EmitPopSpeed);
 	const FVector Start = Top + FVector::UpVector * 15.0;
 
@@ -162,9 +166,22 @@ void ACookieLaunchable::Launch(const FCookieLaunchSpec& Spec, const FVector& Vel
 
 	Mesh->SetAngularDamping(Spec.AngularDamping);
 	Mesh->SetUseCCD(Spec.bUseCCD);
+
+	FVector Spin = FMath::VRand() * Spec.TumbleDegreesPerSecond;
+	if (Spec.bStayUpright)
+	{
+		// Stand it up and lock pitch and roll, so it can only turn about its trunk, in the air and on the ground.
+		SetActorRotation(FRotator(0.f, GetActorRotation().Yaw, 0.f));
+		FBodyInstance* Body = Mesh->GetBodyInstance();
+		Body->bLockXRotation = true;
+		Body->bLockYRotation = true;
+		Body->SetDOFLock(EDOFMode::SixDOF);
+		Spin = FVector(0.0, 0.0, FMath::FRandRange(-1.f, 1.f) * Spec.TumbleDegreesPerSecond);
+	}
+
 	Mesh->SetSimulatePhysics(true);
 	Mesh->SetPhysicsLinearVelocity(Velocity);
-	Mesh->SetPhysicsAngularVelocityInDegrees(FMath::VRand() * Spec.TumbleDegreesPerSecond);
+	Mesh->SetPhysicsAngularVelocityInDegrees(Spin);
 }
 
 void ACookieLaunchable::EmitFromSpouts()
@@ -200,7 +217,15 @@ void ACookieLaunchable::CheckSettled()
 	}
 
 	ACookieGameMode* GameMode = GetWorld()->GetAuthGameMode<ACookieGameMode>();
-	if (ACookieSettledManager* Settled = GameMode ? GameMode->GetSettled() : nullptr)
+	ACookieSettledManager* Settled = GameMode ? GameMode->GetSettled() : nullptr;
+	if (bIsCookie && GrandmaShoves < MaxGrandmaShoves && ShoveOffGrandma(Settled))
+	{
+		++GrandmaShoves;
+		StillSeconds = 0.f;
+		return;
+	}
+
+	if (Settled)
 	{
 		if (bIsCookie)
 		{
@@ -212,6 +237,48 @@ void ACookieLaunchable::CheckSettled()
 		}
 	}
 	Destroy();
+}
+
+bool ACookieLaunchable::ShoveOffGrandma(const ACookieSettledManager* Settled)
+{
+	// What is this cookie resting on? Grandmas are ragdolls (physics bodies) while baking and instances once frozen.
+	const FVector Location = GetActorLocation();
+	FCollisionObjectQueryParams Types;
+	Types.AddObjectTypesToQuery(ECC_WorldStatic);
+	Types.AddObjectTypesToQuery(ECC_WorldDynamic);
+	Types.AddObjectTypesToQuery(ECC_PhysicsBody);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(CookieOnGrandma), false, this);
+	FHitResult Hit;
+	if (!GetWorld()->SweepSingleByObjectType(Hit, Location, Location - FVector(0.0, 0.0, 30.0), FQuat::Identity, Types, FCollisionShape::MakeSphere(4.f), Params))
+	{
+		return false;
+	}
+
+	FVector Axis;
+	if (const ACookieGrandma* Grandma = Cast<ACookieGrandma>(Hit.GetActor()))
+	{
+		Axis = Grandma->GetActorLocation();
+	}
+	else if (Settled && Hit.GetComponent() && Hit.GetComponent() == Settled->GetItemInstances(ECookieItem::Grandma))
+	{
+		FTransform Instance;
+		Settled->GetItemInstances(ECookieItem::Grandma)->GetInstanceTransform(Hit.Item, Instance, /*bWorldSpace=*/ true);
+		Axis = Instance.GetLocation();
+	}
+	else
+	{
+		return false;
+	}
+
+	// Slide it off her, away from her middle.
+	FVector Away = Location - Axis;
+	Away.Z = 0.0;
+	if (!Away.Normalize())
+	{
+		Away = FRotator(0.f, FMath::FRandRange(0.f, 360.f), 0.f).Vector();
+	}
+	Mesh->SetPhysicsLinearVelocity(Away * 220.0 + FVector(0.0, 0.0, 120.0));
+	return true;
 }
 
 void ACookieLaunchable::EndPlay(const EEndPlayReason::Type EndPlayReason)

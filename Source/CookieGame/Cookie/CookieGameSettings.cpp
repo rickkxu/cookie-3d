@@ -93,35 +93,33 @@ UCookieGameSettings::UCookieGameSettings()
 	CookieTree.Launch.LaunchSpeed = 650.f;
 	CookieTree.Launch.SpawnDistance = 400.f;
 	CookieTree.Launch.TumbleDegreesPerSecond = 60.f;
+	CookieTree.Launch.bStayUpright = true;
 	CookieTree.Spouts.Add(Spout(FVector(20, -10, 300), FVector(150, 150, 80), FVector(0, 0, 0), 260.f, 0.55f, 1.f, 20.f));
 
-	// Bakery: a little smaller than the house. Cookies arc out of the oven chimney behind it and tumble out the door.
+	// Bakery: a little smaller than the house, with a big cookie for a sign. Every cookie tumbles out of the front door.
 	Bakery.DisplayName = NSLOCTEXT("CookieGame", "Bakery", "Bakery");
 	Bakery.BaseCost = 25000.0;
 	Bakery.CookiesPerSecond = 120.f;
-	Bakery.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Cookie/Items/SM_Bakery.SM_Bakery")));
+	Bakery.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Cookie/Items/SM_BakeryShop.SM_BakeryShop")));
 	Bakery.Launch.bPlaceholderMaterial = false;
 	Bakery.Launch.Color = FLinearColor(0.86f, 0.56f, 0.52f);
 	Bakery.Launch.LaunchSpeed = 550.f;
 	Bakery.Launch.SpawnDistance = 1000.f;
 	Bakery.Launch.TumbleDegreesPerSecond = 25.f;
-	Bakery.Spouts.Add(Spout(FVector(250, 160, 690), FVector(15, 15, 5), FVector(700, 950, 0), 380.f, 2.2f, 0.6f, 30.f));
-	Bakery.Spouts.Add(Spout(FVector(62, -350, 110), FVector(35, 5, 60), FVector(60, -1000, 0), 260.f, 1.1f, 0.4f, 20.f));
+	Bakery.Spouts.Add(Spout(FVector(0, -360, 110), FVector(35, 5, 60), FVector(0, -1050, 0), 330.f, 1.1f, 1.f, 40.f));
 
-	// Cookie factory: bigger than the house. Geysers out of both smokestacks build a mountain behind it, and the
-	// conveyor chute pours a heap beside it.
+	// Cookie factory: bigger than the house, with a humongous cookie on the roof for a sign. A massive chute on its
+	// east side launches cookies high into the air, building a mountain ~50 m away.
 	Factory.DisplayName = NSLOCTEXT("CookieGame", "Factory", "Cookie Factory");
 	Factory.BaseCost = 400000.0;
 	Factory.CookiesPerSecond = 1000.f;
-	Factory.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Cookie/Items/SM_Factory.SM_Factory")));
+	Factory.Launch.Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Cookie/Items/SM_CookieFactory.SM_CookieFactory")));
 	Factory.Launch.bPlaceholderMaterial = false;
 	Factory.Launch.Color = FLinearColor(0.42f, 0.13f, 0.07f);
 	Factory.Launch.LaunchSpeed = 450.f;
 	Factory.Launch.SpawnDistance = 1900.f;
 	Factory.Launch.TumbleDegreesPerSecond = 10.f;
-	Factory.Spouts.Add(Spout(FVector(700, 300, 1728), FVector(30, 30, 5), FVector(500, 2600, 0), 700.f, 3.2f, 0.38f, 70.f));
-	Factory.Spouts.Add(Spout(FVector(330, 300, 1728), FVector(30, 30, 5), FVector(500, 2600, 0), 700.f, 3.2f, 0.38f, 70.f));
-	Factory.Spouts.Add(Spout(FVector(1590, -200, 150), FVector(10, 40, 5), FVector(2150, -200, 0), 350.f, 0.8f, 0.24f, 40.f));
+	Factory.Spouts.Add(Spout(FVector(1533, 0, 1764), FVector(40, 40, 40), FVector(5200, 0, 0), 900.f, 3.9f, 1.f, 150.f));
 
 	PileCoreMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Cookie/Items/MI_Item_Dough.MI_Item_Dough")));
 
@@ -136,11 +134,11 @@ UCookieGameSettings::UCookieGameSettings()
 		DemoPlacements.Add(Placement);
 	};
 	Place(ECookieItem::Factory, 12500, -1650, 0.f);
-	Place(ECookieItem::Factory, 15500, -4600, 30.f);
+	Place(ECookieItem::Factory, 15500, -4600, 90.f);
 	Place(ECookieItem::Factory, -4500, 2600, 180.f);
 	Place(ECookieItem::Bakery, 9600, 1200, 200.f);
 	Place(ECookieItem::Bakery, -6800, -1650, 90.f);
-	Place(ECookieItem::CookieTree, -300, -700, 0.f);
+	Place(ECookieItem::CookieTree, -700, -850, 0.f);  // Its heap stays off the front path.
 	Place(ECookieItem::CookieTree, 1500, -800, 70.f);
 	auto Heap = [this](double X, double Y, int64 Cookies)
 	{
@@ -149,7 +147,7 @@ UCookieGameSettings::UCookieGameSettings()
 		DemoHeap.Cookies = Cookies;
 		DemoHeaps.Add(DemoHeap);
 	};
-	Heap(2700, -1650, 6000000);
+	Heap(4000, -1700, 6000000);  // Clear of the front door and the path to the street.
 	Heap(-2700, 2200, 4000000);
 	Heap(14500, 1500, 10000000);
 }

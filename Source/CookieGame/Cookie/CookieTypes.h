@@ -66,6 +66,10 @@ struct FCookieLaunchSpec
 	// Continuous collision detection. Needed for thin, fast things like cookies.
 	UPROPERTY(EditAnywhere, Category = "Launch")
 	bool bUseCCD = false;
+
+	// Never tips over: flies and lands standing up, only turning about its vertical axis (trees).
+	UPROPERTY(EditAnywhere, Category = "Launch")
+	bool bStayUpright = false;
 };
 
 // Where a big producer spews its cookies: out of Start (a chimney, a smokestack, a canopy), arcing onto a heap

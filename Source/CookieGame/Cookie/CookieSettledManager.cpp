@@ -1083,6 +1083,11 @@ void ACookieSettledManager::LaunchGhostCookie(const FVector& Start, const FVecto
 
 	// Work out once where the arc meets the house or anything settled, so flying costs nothing but a transform update.
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(CookieGhostArc), false);
+	// Never on a grandma's head: these cookies can't slide off, so they fall past her to the floor.
+	if (UInstancedStaticMeshComponent* Grandmas = ItemInstances[static_cast<int32>(ECookieItem::Grandma)])
+	{
+		Params.AddIgnoredComponent(Grandmas);
+	}
 	const FCollisionObjectQueryParams Static(ECC_WorldStatic);
 	constexpr double Step = 1.0 / 30.0;
 	constexpr double MaxSeconds = 5.0;
