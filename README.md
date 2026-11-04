@@ -221,7 +221,8 @@ otherwise the editor throttles itself to ~3 fps.
 | `CookieSettledManager` | Everything at rest, as instanced meshes; settled items keep popping cookies; big producers' spouts; ghost (non-physics) flying cookies; heaps and mountains (surface layout, cores, merging) |
 | `CookieNeighborhood` | Generates the street: house shells, yards, road, lamps, cul-de-sac, park, tree lines |
 | `CookieGrandma` | Ragdoll grandma: flies, gets up (a fall animation played backwards), bakes. Frozen into instances when not nearby |
-| `CookieHUD` | Cookie count, crosshair, item hotbar |
+| `CookieHUD` / `SCookieHUDWidget` | Slate HUD in Lilita One (`Content/Fonts`, OFL): gradient cookie count with a cookie and a per-second pill; a portrait card per item (picture, cost, owned, +X/s, key badge; grey when unaffordable, glowing when selected, pulsing on purchase); "+1" click, "+N" purchase and falling "-cost" pop-ups (rapid-fire purchases add up) |
+| `CookieIconStudio` | Renders the HUD pictures from the real models (and the cookie) once at the start of play, high above the map |
 
 ## Working with Claude on the rented machine
 

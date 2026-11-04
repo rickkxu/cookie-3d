@@ -3,7 +3,9 @@
 #include "Components/CapsuleComponent.h"
 #include "CookieGameMode.h"
 #include "CookieGameSettings.h"
+#include "CookieHUD.h"
 #include "CookieLaunchable.h"
+#include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
@@ -145,6 +147,10 @@ void ACookieCharacter::ShootCookie()
 	{
 		GameMode->AddCookies(1.0);
 	}
+	if (ACookieHUD* HUD = GetHUD())
+	{
+		HUD->NotifyShot();
+	}
 
 	FVector Location, Velocity;
 	FRotator Rotation;
@@ -244,9 +250,14 @@ void ACookieCharacter::Tick(float DeltaSeconds)
 bool ACookieCharacter::BuyOnce()
 {
 	ACookieGameMode* GameMode = GetWorld()->GetAuthGameMode<ACookieGameMode>();
+	const double Cost = GameMode ? GameMode->GetCost(SelectedItem) : 0.0;
 	if (!GameMode || !GameMode->TryBuy(SelectedItem))
 	{
 		return false;
+	}
+	if (ACookieHUD* HUD = GetHUD())
+	{
+		HUD->NotifyPurchase(SelectedItem, Cost);
 	}
 
 	FVector Location, Velocity;
@@ -254,6 +265,12 @@ bool ACookieCharacter::BuyOnce()
 	AimFromCamera(UCookieGameSettings::Get().GetItem(SelectedItem).Launch, Location, Rotation, Velocity);
 	ACookieLaunchable::SpawnItem(GetWorld(), SelectedItem, Location, Rotation, Velocity);
 	return true;
+}
+
+ACookieHUD* ACookieCharacter::GetHUD() const
+{
+	const APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	return PlayerController ? Cast<ACookieHUD>(PlayerController->GetHUD()) : nullptr;
 }
 
 void ACookieCharacter::AimFromCamera(const FCookieLaunchSpec& Spec, FVector& OutLocation, FRotator& OutRotation, FVector& OutVelocity) const

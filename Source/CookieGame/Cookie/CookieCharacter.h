@@ -55,6 +55,9 @@ private:
 	// Buys and launches one of the selected item. Returns false if the player can't afford it.
 	bool BuyOnce();
 
+	// The HUD, for click and purchase pop-ups (null if there's none).
+	class ACookieHUD* GetHUD() const;
+
 	// Where and how fast something thrown from the camera starts out.
 	void AimFromCamera(const FCookieLaunchSpec& Spec, FVector& OutLocation, FRotator& OutRotation, FVector& OutVelocity) const;
 

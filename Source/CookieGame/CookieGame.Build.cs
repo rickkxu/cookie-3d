@@ -28,12 +28,12 @@ public class CookieGame : ModuleRules
 			"ProceduralMeshComponent"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[] { "SlateCore" });
 
 		// Editor-only setup commandlets (Cookie/CookieRetargetCommandlet).
 		if (Target.bBuildEditor)
 		{
-			PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd", "AssetRegistry", "IKRig", "IKRigEditor", "SlateCore" });
+			PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd", "AssetRegistry", "IKRig", "IKRigEditor" });
 		}
 
 		PublicIncludePaths.AddRange(new string[] {
