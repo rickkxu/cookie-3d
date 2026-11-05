@@ -247,9 +247,13 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Demo", meta = (EditCondition = "bDemoMode"))
 	TArray<FCookieDemoPlacement> DemoPlacements;
 
-	// Heaps already there when play starts. Their cookies are in the bank.
+	// Heaps already there when play starts. Their cookies aren't in the bank (see DemoStartingCookies).
 	UPROPERTY(Config, EditAnywhere, Category = "Demo", meta = (EditCondition = "bDemoMode"))
 	TArray<FCookieDemoHeap> DemoHeaps;
+
+	// Cookies in the bank when demo play starts (instead of StartingCookies). The demo heaps don't add to it.
+	UPROPERTY(Config, EditAnywhere, Category = "Demo", meta = (ClampMin = "0.0", EditCondition = "bDemoMode"))
+	double DemoStartingCookies = 4000000.0;
 
 	// Speeds up everything's production (for filming mountains growing). The bank still only counts cookies
 	// that physically came out, and the HUD's per-second figure includes it.

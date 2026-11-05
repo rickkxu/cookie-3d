@@ -180,13 +180,14 @@ Indoor heaps (inside the player's house) stay capped at 3,000 cookies each and s
 ### Filming the mountain demo
 
 Tick **Project Settings → Game → Cookie Game → Demo → Demo Mode** and press Play: the street starts with three
-cookie mountains (6M by the house, 4M behind it, 10M in the park, about 20M cookies in the bank), three factories,
+cookie mountains (12M by the house, 4M behind it, 10M in the park) and 4M cookies in the bank, four factories,
 two bakeries and two cookie trees already spewing, at 3× production. Untick it for the normal game. 47 fps on the T4.
 
 The scene itself is editable under the same heading (only used while Demo Mode is on):
 
 - **Demo Placements**: items standing from the start, already producing (each counts as owned).
-- **Demo Heaps**: heaps already there at start (in the bank too).
+- **Demo Heaps**: heaps already there at start (not counted in the bank).
+- **Demo Starting Cookies**: the bank at start (4,000,000). Spending thins the heaps as usual.
 - **Demo Production Multiplier**: speeds up all production (3 by default), e.g. 10 to watch mountains grow in minutes.
 
 The built-in scene is set in `UCookieGameSettings`'s constructor. Editing the lists in Project Settings saves your

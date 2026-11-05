@@ -68,12 +68,12 @@ void ACookieGameMode::PlaceDemoItems()
 		Settled->AddItem(Placement.Item, FTransform(FRotator(0.f, Placement.Yaw, 0.f), Location));
 	}
 
-	// Heaps already there: real cookies, so they're in the bank too.
+	// Heaps already there. The bank starts at a set amount rather than their total, so spending thins them a little.
 	for (const FCookieDemoHeap& Heap : UCookieGameSettings::Get().DemoHeaps)
 	{
 		Settled->AddToPileNear(Heap.Location, Heap.Cookies);
-		Cookies += static_cast<double>(Heap.Cookies);
 	}
+	Cookies = UCookieGameSettings::Get().DemoStartingCookies;
 }
 
 void ACookieGameMode::Tick(float DeltaSeconds)
