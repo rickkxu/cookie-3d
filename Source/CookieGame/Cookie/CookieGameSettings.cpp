@@ -150,27 +150,8 @@ UCookieGameSettings::UCookieGameSettings()
 
 	PileCoreMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Cookie/Items/MI_Item_Dough.MI_Item_Dough")));
 
-	// The demo scene (used only with Demo Mode on): factories in the park, up the street and across it, bakeries at both
-	// ends, cookie trees in the front yard, and three mountains, one either side of the house and a giant in the park.
-	auto Place = [this](ECookieItem Item, double X, double Y, float Yaw)
-	{
-		FCookieDemoPlacement Placement;
-		Placement.Item = Item;
-		Placement.Location = FVector(X, Y, 0.0);
-		Placement.Yaw = Yaw;
-		DemoPlacements.Add(Placement);
-	};
-	Place(ECookieItem::Factory, 12500, -1650, 0.f);
-	Place(ECookieItem::Factory, 15500, -4600, 90.f);
-	Place(ECookieItem::Factory, -4500, 2600, 180.f);
-	// Behind the far side of the street, its chute aimed back across it: the chute's target is 52 m out along the
-	// factory's +X, so this lands right on the mountain beside the front door at (4000, -1700).
-	Place(ECookieItem::Factory, 4000, -6900, 90.f);
-	Place(ECookieItem::Bakery, 9600, 1200, 200.f);
-	Place(ECookieItem::Bakery, -6800, -1650, 90.f);
-	// In the open lawn between the front path and the yard tree at (-620, -820), toward the sidewalk.
-	Place(ECookieItem::CookieTree, -340, -980, 0.f);
-	Place(ECookieItem::CookieTree, 1500, -800, 70.f);
+	// The demo scene (used only with Demo Mode on): three mountains, one either side of the house and a giant in the
+	// park, and no items yet (add some to DemoPlacements to start with producers already spewing).
 	auto Heap = [this](double X, double Y, int64 Cookies)
 	{
 		FCookieDemoHeap DemoHeap;
@@ -178,7 +159,7 @@ UCookieGameSettings::UCookieGameSettings()
 		DemoHeap.Cookies = Cookies;
 		DemoHeaps.Add(DemoHeap);
 	};
-	Heap(4000, -1700, 12000000);  // Right of the front door, clear of the path to the street; fed by the factory above.
+	Heap(4000, -1700, 12000000);  // Right of the front door, clear of the path to the street.
 	Heap(-2700, 2200, 4000000);
 	Heap(14500, 1500, 10000000);
 }
